@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#FAFAF8"/>
+<title>KoneKt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  /* Afro-Modern Light — blanc ivoire, safran, corail, vert savane */
+  --bg:#FAFAF8;
+  --surface:#FFFFFF;
+  --card:#FFFFFF;
+  --card2:#F5F4F0;
+  --accent:#E8521A;       /* corail africain profond */
+  --accl:#F07843;         /* corail clair */
+  --gold:#D4A017;         /* or savane */
+  --teal:#1A8A7A;         /* vert forêt */
+  --purple:#7C5CBF;
+  --sand:#F5EDD6;         /* sable chaud */
+  --sand2:#EDE0C4;
+  --text:#1A1208;         /* encre profonde */
+  --text2:#3D2E1A;
+  --muted:#8A7A6A;
+  --border:#E8E0D0;
+  --border2:#D5C9B5;
+  --ok:#1A8A4A;
+  --warn:#D4820A;
+  --err:#CC2222;
+  --shadow:0 2px 16px rgba(26,18,8,.08);
+  --shadow-lg:0 8px 40px rgba(26,18,8,.14);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;}
+#app{height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative;overflow:hidden;background:var(--bg);}
+.screen{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.screen::-webkit-scrollbar{display:none;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shakeX{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@keyframes pulse{0%,100%{opacity:.25;transform:scale(.75)}50%{opacity:1;transform:scale(1)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes waxSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.fadeUp{animation:fadeUp .5s cubic-bezier(.22,1,.36,1) both;}
+
+input,textarea,button{font-family:'Plus Jakarta Sans',sans-serif;outline:none;}
+button{cursor:pointer;transition:all .18s cubic-bezier(.22,1,.36,1);}
+button:active{transform:scale(.93);}
+textarea{resize:none;}
+
+/* ── BOTTOM NAV — flottant arrondi ── */
+#bottom-nav{
+  display:none;flex-shrink:0;
+  margin:0 16px 12px;
+  background:var(--text);
+  border-radius:26px;
+  padding:10px 8px max(10px,env(safe-area-inset-bottom));
+  box-shadow:0 8px 32px rgba(26,18,8,.28);
+}
+#bottom-nav.show{display:flex;}
+.nav-btn{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 4px;border-radius:18px;position:relative;transition:background .2s;}
+.nav-btn.active{background:var(--accent);}
+.nav-btn .nav-icon{font-size:20px;line-height:1;}
+.nav-btn .nav-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.3px;}
+.nav-btn.active .nav-lbl{color:#fff;}
+.nav-btn .nav-dot{display:none;}
+.nav-badge{position:absolute;top:-2px;right:14%;width:15px;height:15px;border-radius:50%;color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--text);background:var(--accent);}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:11px 20px;border-radius:50px;font-weight:700;font-size:13px;z-index:9999;white-space:nowrap;display:none;animation:slideIn .3s ease;color:#fff;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,18,8,.5);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:flex-end;justify-content:center;}
+.modal-sheet{background:var(--bg);border-radius:28px 28px 0 0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;animation:slideUp .35s cubic-bezier(.22,1,.36,1);padding-bottom:env(safe-area-inset-bottom);}
+.modal-sheet::-webkit-scrollbar{display:none;}
+.modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border2);margin:14px auto 0;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:18px;box-shadow:var(--shadow);}
+
+/* ── BUTTONS ── */
+.btn{border:none;border-radius:16px;font-weight:700;font-size:15px;padding:15px 22px;transition:all .2s;width:100%;}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(232,82,26,.35);}
+.btn-primary:active{box-shadow:0 2px 8px rgba(232,82,26,.2);}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border2);}
+.btn-danger{background:#CC222211;color:var(--err);border:1.5px solid #CC222233;}
+.btn-success{background:#1A8A4A11;color:var(--ok);border:1.5px solid #1A8A4A33;}
+.btn-ghost{background:transparent;border:none;color:var(--accent);font-weight:700;font-size:14px;padding:8px 0;width:auto;}
+.btn-sand{background:var(--sand);color:var(--text);border:none;}
+
+/* ── INPUTS ── */
+.input-wrap{margin-bottom:16px;}
+.input-wrap label{font-size:12px;color:var(--muted);font-weight:700;display:block;margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px;}
+.input-field{display:flex;align-items:center;background:var(--sand);border:1.5px solid transparent;border-radius:14px;padding:0 14px;transition:all .2s;}
+.input-field:focus-within{border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px rgba(232,82,26,.08);}
+.input-field input,.input-field textarea{flex:1;background:transparent;border:none;color:var(--text);font-size:14px;padding:13px 0;outline:none;font-family:'Plus Jakarta Sans',sans-serif;}
+.input-field textarea{padding:13px 0;min-height:80px;}
+
+/* ── AVATAR ── */
+.avatar{border-radius:30%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* ── STARS ── */
+.stars{color:var(--gold);}
+
+/* ── MISC ── */
+.stitle{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.step-dot{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;}
+.step-line{width:2px;background:var(--border);position:absolute;left:17px;top:40px;bottom:0;}
+.step-content{flex:1;padding-top:6px;}
+
+/* ── WAX PATTERN (motif décoratif africain) ── */
+.wax-bg{
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(232,82,26,.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(212,160,23,.08) 0%, transparent 40%),
+    radial-gradient(circle at 60% 80%, rgba(26,138,122,.05) 0%, transparent 40%);
+}
+.wax-chip{
+  width:120px;height:120px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--gold));
+  opacity:.07;position:absolute;pointer-events:none;
+}
+/* ── CHIP TAG ── */
+.chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--sand);color:var(--text2);}
+.chip-accent{background:rgba(232,82,26,.12);color:var(--accent);}
+.chip-ok{background:rgba(26,138,74,.12);color:var(--ok);}
+.chip-err{background:rgba(204,34,34,.1);color:var(--err);}
+.chip-gold{background:rgba(212,160,23,.12);color:var(--gold);}
+</style>
+<link rel="manifest" href="data:application/json,{%22name%22:%22KoneKt%22,%22short_name%22:%22KoneKt%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23F5EDD6%22,%22theme_color%22:%22%23E8521A%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23E8521A'/%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22}]}"/>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23E8521A'/><circle cx='50' cy='50' r='46' fill='%231A1208' stroke='url(%23g)' stroke-width='4'/><defs><linearGradient id='g' x1='0' y1='0' x2='100' y2='100' gradientUnits='userSpaceOnUse'><stop offset='0%25' stop-color='%231A8A7A'/><stop offset='100%25' stop-color='%23E8521A'/></linearGradient></defs><line x1='20' y1='22' x2='20' y2='78' stroke='%231A8A7A' stroke-width='7' stroke-linecap='round'/><line x1='20' y1='50' x2='44' y2='22' stroke='%231A8A7A' stroke-width='7' stroke-linecap='round'/><line x1='20' y1='50' x2='44' y2='78' stroke='%231A8A7A' stroke-width='7' stroke-linecap='round'/><line x1='80' y1='22' x2='80' y2='78' stroke='%23E8521A' stroke-width='7' stroke-linecap='round'/><line x1='80' y1='50' x2='56' y2='22' stroke='%23E8521A' stroke-width='7' stroke-linecap='round'/><line x1='80' y1='50' x2='56' y2='78' stroke='%23E8521A' stroke-width='7' stroke-linecap='round'/><circle cx='50' cy='50' r='8' fill='white'/><circle cx='50' cy='50' r='4' fill='%23D4A017'/></svg>"/>
+</head>
+<body>
+<div id="app">
+  <div class="screen" id="screen"></div>
+  <nav id="bottom-nav">
+    <button class="nav-btn active" id="nav-home" onclick="goTab('home')">
+      <span class="nav-icon">🏠</span><span class="nav-lbl">Accueil</span>
+    </button>
+    <button class="nav-btn" id="nav-msgs" onclick="goTab('msgs')">
+      <span class="nav-icon">💬</span><span class="nav-lbl">Messages</span>
+    </button>
+    <button class="nav-btn" id="nav-cmds" onclick="goTab('cmds')">
+      <span class="nav-icon">📦</span><span class="nav-lbl">Commandes</span>
+    </button>
+    <button class="nav-btn" id="nav-profile" onclick="goTab('profile')">
+      <span class="nav-icon">👤</span><span class="nav-lbl">Profil</span>
+    </button>
+  </nav>
+</div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+// ══════════════════════════════════════════════
+//  FIREBASE CONFIG — konekt-788c3
+// ══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:        "AIzaSyCkXKO6i9oOjwJkFqO3QfeucJGc5i5WDbc",
+  authDomain:    "konekt-788c3.firebaseapp.com",
+  projectId:     "konekt-788c3",
+  storageBucket: "konekt-788c3.firebasestorage.app",
+  messagingSenderId: "1044180836092",
+  appId:         "1:1044180836092:android:30052dbd45705fa42a0179"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+window.FB = {
+  fbRegister: async (email, password, role, nom, extra={}) => {
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    await db.collection("users").doc(cred.user.uid).set({
+      email, role, nom, creeLe: firebase.firestore.FieldValue.serverTimestamp(),
+      ...extra
+    });
+    // Si vérification soumise, créer une demande admin
+    if(extra.verifStatut === 'en_attente'){
+      await db.collection("verifications").add({
+        uid: cred.user.uid, nom, email, role,
+        cni: extra.cni||'', verifStatut: 'en_attente',
+        creeLe: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    return cred.user;
+  },
+  fbLogin: async (email, password) => {
+    const cred = await auth.signInWithEmailAndPassword(email, password);
+    try {
+      const snap = await db.collection("users").doc(cred.user.uid).get();
+      if(snap.exists){
+        return { uid: cred.user.uid, email, ...snap.data() };
+      } else {
+        // Compte Auth existe mais pas de doc Firestore — créer le doc
+        const defaultData = { email, role: 'visiteur', nom: email.split('@')[0], creeLe: null };
+        await db.collection("users").doc(cred.user.uid).set(defaultData);
+        return { uid: cred.user.uid, ...defaultData };
+      }
+    } catch(e) {
+      // Si Firestore inaccessible, connexion quand même
+      return { uid: cred.user.uid, email, role: 'visiteur', nom: email.split('@')[0] };
+    }
+  },
+  fbLogout: async () => { await auth.signOut(); },
+  fbSaveMsg: async (convId, msg) => {
+    await db.collection("conversations").doc(convId).collection("messages").add({ ...msg, creeLe: firebase.firestore.FieldValue.serverTimestamp() });
+  },
+  fbSaveCmd: async (cmd) => {
+    await db.collection("commandes").doc(cmd.id).set({ ...cmd, creeLe: firebase.firestore.FieldValue.serverTimestamp() });
+  },
+};
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let STATE = {
+  screen: 'splash',
+  user: null,
+  tab: 'home',
+  selPrest: null,
+  splashStep: 0,
+  logoTaps: 0,
+  logoTimer: null,
+};
+
+// ══════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════
+const PRESTS = [
+  {id:1,nom:"Jean-Paul Mbarga",metier:"Électricien certifié",cat:"electricite",ville:"Douala",note:4.9,avis:127,tarif:5000,unite:"heure",tags:["Installation","Dépannage","Climatisation"],dispo:true,verifie:true,emoji:"⚡",couleur:"#F5C842",bio:"10 ans d'expérience. Intervient dans tout Douala en urgence."},
+  {id:2,nom:"Aïcha Fouda",metier:"Coiffeuse & Esthéticienne",cat:"beaute",ville:"Yaoundé",note:4.8,avis:89,tarif:3000,unite:"prestation",tags:["Tresses","Lissage","Soins visage"],dispo:true,verifie:true,emoji:"💇",couleur:"#FF6B9D",bio:"Spécialiste des coiffures africaines modernes et soins beauté."},
+  {id:3,nom:"Samuel Njoya",metier:"Plombier & Sanitaire",cat:"plomberie",ville:"Douala",note:4.7,avis:64,tarif:8000,unite:"heure",tags:["Fuite","Installation","Rénovation"],dispo:false,verifie:true,emoji:"🔧",couleur:"#0ECFC9",bio:"Réparations rapides, disponible 6j/7, devis gratuit."},
+  {id:4,nom:"Marie-Claire Eto'o",metier:"Prof maths & physique",cat:"cours",ville:"Yaoundé",note:5.0,avis:43,tarif:4000,unite:"heure",tags:["Lycée","Université","Concours"],dispo:true,verifie:true,emoji:"📚",couleur:"#A78BFA",bio:"Ingénieure de formation. Résultats garantis ou remboursé."},
+  {id:5,nom:"Alhadji Boukar",metier:"Producteur piscicole",cat:"agriculture",ville:"Garoua",note:4.6,avis:31,tarif:0,unite:"devis",tags:["Tilapia","Carpe","Livraison"],dispo:true,verifie:true,emoji:"🐟",couleur:"#22C55E",bio:"Poissons frais de bassin. Commandes en gros disponibles."},
+  {id:6,nom:"Patrick Nkemdirim",metier:"Vendeur pièces auto",cat:"commerce",ville:"Douala",note:4.5,avis:112,tarif:0,unite:"marché",tags:["Toyota","Peugeot","Occasion"],dispo:true,verifie:false,emoji:"🔩",couleur:"#FB923C",bio:"Pièces neuves et d'occasion. Prix compétitifs, livraison possible."},
+  {id:7,nom:"Estelle Kana",metier:"Pépiniériste",cat:"agriculture",ville:"Bafoussam",note:4.8,avis:22,tarif:1500,unite:"plant",tags:["Fruitiers","Ornement","Bio"],dispo:true,verifie:true,emoji:"🌱",couleur:"#4ADE80",bio:"Pépinière bio, livraison dans tout l'Ouest Cameroun."},
+  {id:8,nom:"Rodrigue Toko",metier:"Technicien informatique",cat:"info",ville:"Yaoundé",note:4.7,avis:58,tarif:6000,unite:"heure",tags:["Réparation PC","Réseau","Formation"],dispo:true,verifie:true,emoji:"💻",couleur:"#38BDF8",bio:"Dépannage rapide à domicile ou en boutique, 7j/7."},
+];
+
+const CATS = [
+  {id:"all",label:"Tous",icon:"🌍"},
+  {id:"batiment",label:"Bâtiment",icon:"🏗️"},
+  {id:"beaute",label:"Beauté & Bien-être",icon:"✂️"},
+  {id:"auto",label:"Auto & Moto",icon:"🚗"},
+  {id:"agriculture",label:"Agriculture & Élevage",icon:"🌱"},
+  {id:"sante",label:"Santé",icon:"❤️"},
+  {id:"education",label:"Éducation & Cours",icon:"📚"},
+  {id:"tech",label:"Tech & Informatique",icon:"💻"},
+  {id:"commerce",label:"Commerce & Livraison",icon:"🛒"},
+  {id:"evenement",label:"Événements",icon:"🎉"},
+  {id:"cuisine",label:"Cuisine & Traiteur",icon:"🍽️"},
+  {id:"menage",label:"Ménage & Nettoyage",icon:"🧹"},
+  {id:"securite",label:"Sécurité & Gardiennage",icon:"🛡️"},
+  {id:"couture",label:"Couture & Mode",icon:"🧵"},
+  {id:"media",label:"Photo & Vidéo",icon:"📸"},
+];
+
+let CONVS = [
+  {id:1,prestId:1,nonLus:0,statut:"Devis en attente",msgs:[
+    {id:1,from:"them",text:"Bonjour ! Comment puis-je vous aider aujourd'hui ?",time:"09:12",date:"Aujourd'hui"},
+    {id:2,from:"me",text:"Bonjour, j'ai une panne électrique dans mon salon.",time:"09:15",date:"Aujourd'hui"},
+    {id:3,from:"them",text:"D'accord. Je peux passer demain matin. Diagnostic 3 000 FCFA. 👍",time:"09:22",date:"Aujourd'hui"},
+  ]},
+  {id:2,prestId:2,nonLus:1,statut:"RDV confirmé",msgs:[
+    {id:1,from:"them",text:"Disponible ce samedi pour vos tresses 😊",time:"18:30",date:"Hier"},
+    {id:2,from:"me",text:"Super ! À quelle heure ?",time:"18:45",date:"Hier"},
+    {id:3,from:"them",text:"À partir de 9h. Prévoyez 3h selon le modèle.",time:"18:47",date:"Hier"},
+  ]},
+];
+
+let CMDS = [
+  {id:"CMD-001",prestId:1,statut:"en_cours",service:"Réparation disjoncteur",date:"2026-03-05",heure:"09:00",duree:2,adresse:"Akwa, Douala",total:10000,cree:"2026-03-01"},
+  {id:"CMD-002",prestId:2,statut:"confirme",service:"Tresses box braids",date:"2026-03-08",heure:"09:00",duree:3,adresse:"Bastos, Yaoundé",total:9000,cree:"2026-03-02"},
+  {id:"CMD-003",prestId:4,statut:"termine",service:"Cours maths Terminale",date:"2026-02-28",heure:"16:00",duree:2,adresse:"Omnisports, Yaoundé",total:8000,cree:"2026-02-25"},
+];
+
+const STATUTS = {
+  en_attente:{label:"En attente",color:"#F59E0B",icon:"⏳"},
+  confirme:{label:"Confirmé",color:"#0ECFC9",icon:"✅"},
+  en_cours:{label:"En cours",color:"#FF6B2B",icon:"🔄"},
+  termine:{label:"Terminé",color:"#22C55E",icon:"🎉"},
+  annule:{label:"Annulé",color:"#EF4444",icon:"❌"},
+};
+
+const ADMIN_PIN = "2580";
+let logoTaps=0, logoTimer=null;
+let activeCat="all", searchVal="", selConvId=null, selCmdId=null;
+let newOrderStep=0, newOrderForm={prestId:null,service:"",adresse:"",date:"",heure:"08:00",duree:1};
+let reviewNote=0, reviewComment="", adminTab="home";
+let pendingPrests=[
+  {id:"P001",nom:"Félix Ondoa",metier:"Menuisier",ville:"Douala",emoji:"🪚",couleur:"#FB923C",hasId:true},
+  {id:"P002",nom:"Carine Beti",metier:"Vendeuse jeans",ville:"Yaoundé",emoji:"👖",couleur:"#F472B6",hasId:true},
+  {id:"P003",nom:"Alain Moukam",metier:"Pièces auto",ville:"Bafoussam",emoji:"🔩",couleur:"#60A5FA",hasId:false},
+];
+let signals=[
+  {id:"S001",type:"Comportement",de:"Marc T.",contre:"Samuel N.",gravite:"haute",desc:"Prestataire agressif lors de l'intervention."},
+  {id:"S002",type:"Arnaque",de:"Sophie M.",contre:"Inconnu",gravite:"moyenne",desc:"Paiement effectué mais service non rendu."},
+];
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const s = n => { const sc=$('screen'); sc.innerHTML=n; sc.scrollTop=0; };
+const fmt = n => n.toLocaleString('fr-FR')+' FCFA';
+const stars = n => '★'.repeat(Math.floor(n))+'☆'.repeat(5-Math.floor(n));
+const prest = id => PRESTS.find(p=>p.id===id);
+const now = () => new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+
+function goLogin(){ STATE.screen='login'; render(); }
+
+function showToast(msg, color='#22C55E'){
+  const t=$('toast');
+  t.textContent=msg; t.style.background=color; t.style.display='block';
+  setTimeout(()=>t.style.display='none',2800);
+}
+
+function setNav(show, active){
+  const nav=$('bottom-nav');
+  nav.className=show?'show':'';
+  ['home','msgs','cmds','profile','admin'].forEach(k=>{
+    const b=$('nav-'+k);
+    if(b) b.className='nav-btn'+(k===active?' active':'');
+  });
+}
+
+function render(){
+  const sc = STATE.screen;
+  if(sc==='splash') renderSplash();
+  else if(sc==='welcome') renderWelcome();
+  else if(sc==='login') renderLogin();
+  else if(sc==='register') renderRegisterScreen(STATE._registerRole||'visiteur');
+  else if(sc==='app') renderApp();
+}
+
+// ══════════════════════════════════════════════
+//  SPLASH
+// ══════════════════════════════════════════════
+const SLIDES=[
+  {emoji:"🔗",title:"Bienvenue sur KoneKt",sub:"La plateforme qui connecte prestataires et clients au Cameroun"},
+  {emoji:"🔧",title:"Trouvez n'importe quel service",sub:"Plombier, coiffeur, agriculteur… tous les prestataires en un clic"},
+  {emoji:"⭐",title:"Évaluez & faites confiance",sub:"Notes, avis et vérification d'identité pour des prestataires fiables et compétents"},
+];
+let splashStep=0;
+
+function renderSplash(){
+  setNav(false);
+  const sl=SLIDES[splashStep];
+  const dots=SLIDES.map((_,i)=>`<div style="width:${i===splashStep?28:7}px;height:7px;border-radius:4px;background:${i===splashStep?'var(--accent)':'var(--border2)'};transition:all .4s cubic-bezier(.22,1,.36,1)"></div>`).join('');
+  s(`<div class="wax-bg" style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:48px 28px 36px;overflow:hidden;position:relative;">
+    <!-- Wax décoration -->
+    <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--gold));opacity:.08;pointer-events:none"></div>
+    <div style="position:absolute;bottom:-60px;left:-60px;width:220px;height:220px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--accent));opacity:.06;pointer-events:none"></div>
+
+    <!-- Logo -->
+    <div style="display:flex;align-items:center;gap:10px;animation:fadeUp .5s ease">
+      <svg width="38" height="38" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lg-l" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1A8A7A"/><stop offset="100%" stop-color="#E8521A"/></linearGradient></defs><circle cx="50" cy="50" r="46" fill="#1A1208" stroke="url(#lg-l)" stroke-width="4"/><path d="M 15 50 A 35 35 0 0 1 85 50" stroke="#E8521A" stroke-width="2" stroke-dasharray="4 3" fill="none" opacity="0.4"/><path d="M 85 50 A 35 35 0 0 1 15 50" stroke="#1A8A7A" stroke-width="2" stroke-dasharray="4 3" fill="none" opacity="0.4"/><line x1="20" y1="22" x2="20" y2="78" stroke="#1A8A7A" stroke-width="7" stroke-linecap="round"/><line x1="20" y1="50" x2="44" y2="22" stroke="#1A8A7A" stroke-width="7" stroke-linecap="round"/><line x1="20" y1="50" x2="44" y2="78" stroke="#1A8A7A" stroke-width="7" stroke-linecap="round"/><line x1="80" y1="22" x2="80" y2="78" stroke="#E8521A" stroke-width="7" stroke-linecap="round"/><line x1="80" y1="50" x2="56" y2="22" stroke="#E8521A" stroke-width="7" stroke-linecap="round"/><line x1="80" y1="50" x2="56" y2="78" stroke="#E8521A" stroke-width="7" stroke-linecap="round"/><circle cx="50" cy="50" r="8" fill="white"/><circle cx="50" cy="50" r="4" fill="#D4A017"/></svg>
+      <span style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-1px">Kone<span style="color:var(--accent)">Kt</span></span>
+    </div>
+
+    <!-- Illustration centrale -->
+    <div style="text-align:center;animation:fadeUp .5s ease .08s both;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 0">
+      <div style="width:160px;height:160px;border-radius:40px;background:var(--sand);display:flex;align-items:center;justify-content:center;font-size:80px;margin-bottom:32px;box-shadow:0 20px 60px rgba(232,82,26,.15);animation:float 3s ease-in-out infinite">${sl.emoji}</div>
+      <h1 style="font-size:28px;font-weight:800;color:var(--text);line-height:1.2;margin-bottom:14px;letter-spacing:-.5px">${sl.title}</h1>
+      <p style="font-size:15px;color:var(--muted);line-height:1.7;max-width:280px">${sl.sub}</p>
+    </div>
+
+    <!-- Dots + Boutons -->
+    <div style="width:100%;animation:fadeUp .5s ease .15s both">
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:28px">${dots}</div>
+      <div style="display:flex;gap:12px;align-items:center;justify-content:center">
+        ${splashStep<SLIDES.length-1
+          ? `<button class="btn-ghost" onclick="skipSplash()" style="color:var(--muted)">Passer</button>
+             <button class="btn btn-primary" onclick="nextSlide()" style="width:auto;padding:14px 32px;border-radius:50px">Suivant →</button>`
+          : `<button class="btn btn-primary" onclick="skipSplash()" style="border-radius:50px;font-size:16px">Commencer 🚀</button>`}
+      </div>
+    </div>
+  </div>`);
+}
+
+function nextSlide(){ splashStep=Math.min(splashStep+1,SLIDES.length-1); renderSplash(); }
+function skipSplash(){ STATE.screen='welcome'; render(); }
+
+// ══════════════════════════════════════════════
+//  WELCOME
+// ══════════════════════════════════════════════
+function renderWelcome(){
+  setNav(false);
+  s(`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:36px 24px;position:relative;overflow:hidden;background:var(--bg)">
+    <div style="position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:var(--accent);opacity:.06;pointer-events:none"></div>
+    <div style="position:absolute;bottom:-80px;left:-40px;width:240px;height:240px;border-radius:50%;background:var(--gold);opacity:.07;pointer-events:none"></div>
+    <div style="width:100%;max-width:400px;animation:fadeUp .5s ease">
+      <div style="text-align:center;margin-bottom:44px">
+        <div id="logo-tap" onclick="handleLogoTap()" style="display:inline-flex;align-items:center;gap:12px;background:var(--sand);padding:12px 20px;border-radius:20px;box-shadow:var(--shadow);user-select:none;cursor:default">
+          <svg width="44" height="44" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs><linearGradient id="lg-w" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1A8A7A"/><stop offset="100%" stop-color="#E8521A"/></linearGradient></defs>
+  <circle cx="50" cy="50" r="46" fill="#1A1208" stroke="url(#lg-w)" stroke-width="4"/>
+  <path d="M 15 50 A 35 35 0 0 1 85 50" stroke="#E8521A" stroke-width="2" stroke-dasharray="4 3" fill="none" opacity="0.4"/>
+  <path d="M 85 50 A 35 35 0 0 1 15 50" stroke="#1A8A7A" stroke-width="2" stroke-dasharray="4 3" fill="none" opacity="0.4"/>
+  <line x1="20" y1="22" x2="20" y2="78" stroke="#1A8A7A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="20" y1="50" x2="44" y2="22" stroke="#1A8A7A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="20" y1="50" x2="44" y2="78" stroke="#1A8A7A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="80" y1="22" x2="80" y2="78" stroke="#E8521A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="80" y1="50" x2="56" y2="22" stroke="#E8521A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="80" y1="50" x2="56" y2="78" stroke="#E8521A" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="50" cy="50" r="8" fill="white"/>
+  <circle cx="50" cy="50" r="4" fill="#D4A017"/>
+</svg>
+          <div style="text-align:left">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-1px;color:var(--text)">Kone<span style="color:var(--accent)">Kt</span></div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">Cameroun 🇨🇲</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;text-align:center">Je suis...</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px">
+        <div onclick="goRegister('visiteur')" style="background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow)">
+          <div style="width:48px;height:48px;border-radius:15px;background:rgba(26,138,122,.1);display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>
+          <div style="flex:1"><div style="font-weight:800;font-size:15px;color:var(--text)">Un visiteur / client</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Je cherche des services</div></div>
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--sand);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px">›</div>
+        </div>
+        <div onclick="goRegister('prestataire')" style="background:var(--accent);border-radius:20px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;box-shadow:0 8px 24px rgba(232,82,26,.3)">
+          <div style="width:48px;height:48px;border-radius:15px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🔧</div>
+          <div style="flex:1"><div style="font-weight:800;font-size:15px;color:#fff">Un prestataire</div><div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">Je propose mes services</div></div>
+          <div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px">›</div>
+        </div>
+      </div>
+    </div>
+  </div>`);
+}
+
+function handleLogoTap(){
+  logoTaps++;
+  clearTimeout(logoTimer);
+  if(logoTaps>=5){ logoTaps=0; showAdminPin(); return; }
+  logoTimer=setTimeout(()=>logoTaps=0,1500);
+}
+
+async function goRegister(role){
+  // Pour visiteur et prestataire → afficher formulaire inscription
+  if(role==='visiteur'||role==='prestataire'){
+    renderRegisterScreen(role);
+    return;
+  }
+  // Admin → connexion directe après PIN
+  STATE.user={role:'admin', nom:'Administrateur'};
+  STATE.screen='app';
+  STATE.tab='admin';
+  render();
+}
+
+function renderRegisterScreen(role){
+  STATE.screen='register';
+  STATE._registerRole=role;
+  setNav(false);
+  const isPrest = role==='prestataire';
+  s(`<div style="min-height:100%;background:var(--bg);padding:32px 24px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:var(--accent);opacity:.05;pointer-events:none"></div>
+    <div style="width:100%;max-width:400px;margin:0 auto;animation:fadeUp .5s cubic-bezier(.22,1,.36,1)" id="register-screen">
+      <button onclick="STATE.screen='welcome';render()" style="background:var(--sand);border:none;border-radius:12px;color:var(--text2);font-size:18px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin-bottom:28px;font-weight:700">←</button>
+      <div style="margin-bottom:28px">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:${isPrest?'rgba(232,82,26,.1)':'rgba(26,138,122,.1)'};color:${isPrest?'var(--accent)':'var(--teal)'};padding:5px 12px;border-radius:50px;font-size:12px;font-weight:700;margin-bottom:12px">
+          ${isPrest?'🔧 Prestataire':'👤 Visiteur / Client'}
+        </div>
+        <h2 style="font-size:26px;font-weight:800;color:var(--text);letter-spacing:-.5px;margin-bottom:6px">Créer un compte</h2>
+        <p style="color:var(--muted);font-size:14px">Rejoins la communauté KoneKt 🇨🇲</p>
+      </div>
+
+      <div class="input-wrap"><label>Nom complet</label><div class="input-field"><input type="text" id="r-nom" placeholder="Votre nom complet"/></div></div>
+      <div class="input-wrap"><label>Email</label><div class="input-field"><input type="email" id="r-email" placeholder="ton@email.com"/></div></div>
+      <div class="input-wrap"><label>Mot de passe</label><div class="input-field"><input type="password" id="r-pass" placeholder="Minimum 6 caractères"/></div></div>
+
+      ${isPrest?`
+      <div class="input-wrap"><label>Votre métier</label><div class="input-field"><input type="text" id="r-metier" placeholder="Ex: Électricien, Coiffeur..."/></div></div>
+      <div class="input-wrap"><label>Ville</label><div class="input-field"><input type="text" id="r-ville" placeholder="Douala, Yaoundé..."/></div></div>
+      <div class="input-wrap"><label>Numéro de téléphone</label><div class="input-field"><input type="tel" id="r-tel" placeholder="+237 6XX XXX XXX"/></div></div>
+
+      <!-- SECTION VÉRIFICATION IDENTITÉ -->
+      <div style="background:var(--sand);border-radius:20px;padding:18px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="width:38px;height:38px;border-radius:12px;background:rgba(232,82,26,.15);display:flex;align-items:center;justify-content:center;font-size:20px">🛡️</div>
+          <div>
+            <div style="font-weight:800;font-size:14px;color:var(--text)">Vérification d'identité</div>
+            <div style="font-size:11px;color:var(--muted)">Optionnel mais recommandé</div>
+          </div>
+          <div style="margin-left:auto;background:rgba(212,160,23,.15);color:var(--gold);font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px">BADGE ✓</div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">Les prestataires vérifiés obtiennent un badge ✓ sur leur profil et inspirent plus confiance aux clients.</p>
+
+        <!-- Choix du mode de vérification -->
+        <div style="display:flex;gap:8px;margin-bottom:14px" id="verif-choice">
+          <button onclick="setVerifMode('numero')" id="vbtn-numero" style="flex:1;padding:10px 8px;border-radius:14px;border:1.5px solid var(--accent);background:rgba(232,82,26,.08);color:var(--accent);font-weight:700;font-size:12px;transition:all .2s">
+            🪪 Numéro CNI
+          </button>
+          <button onclick="setVerifMode('photo')" id="vbtn-photo" style="flex:1;padding:10px 8px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:12px;transition:all .2s">
+            📸 Photo pièce
+          </button>
+          <button onclick="setVerifMode('non')" id="vbtn-non" style="flex:1;padding:10px 8px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:12px;transition:all .2s">
+            Plus tard
+          </button>
+        </div>
+
+        <!-- Zone dynamique selon le choix -->
+        <div id="verif-zone">
+          <div class="input-wrap" style="margin-bottom:0">
+            <label>Numéro de la CNI / Passeport</label>
+            <div class="input-field"><input type="text" id="r-cni" placeholder="Ex: 1234567890123" style="letter-spacing:1px"/></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">🔒 Chiffré et sécurisé — jamais partagé</div>
+        </div>
+      </div>`:``}
+
+      <button class="btn btn-primary" id="register-btn" onclick="submitRegister('${role}')" style="margin-top:8px;border-radius:16px;font-size:15px;padding:16px">
+        ${isPrest?'Créer mon profil prestataire':'Créer mon compte'}
+      </button>
+      <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:20px">Déjà un compte ? <button class="btn-ghost" id="go-login-btn">Se connecter →</button></p>
+    </div>
+  </div>`);
+}
+
+function setVerifMode(mode){
+  // Update button styles
+  const modes = ['numero','photo','non'];
+  modes.forEach(m=>{
+    const btn = document.getElementById('vbtn-'+m);
+    if(!btn) return;
+    if(m===mode){
+      btn.style.borderColor='var(--accent)';
+      btn.style.background='rgba(232,82,26,.08)';
+      btn.style.color='var(--accent)';
+    } else {
+      btn.style.borderColor='var(--border)';
+      btn.style.background='transparent';
+      btn.style.color='var(--muted)';
+    }
+  });
+  const zone = document.getElementById('verif-zone');
+  if(!zone) return;
+  if(mode==='numero'){
+    zone.innerHTML=`
+      <div class="input-wrap" style="margin-bottom:0">
+        <label>Numéro CNI / Passeport</label>
+        <div class="input-field"><input type="text" id="r-cni" placeholder="Ex: 1234567890123" style="letter-spacing:1px"/></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">🔒 Chiffré et sécurisé — jamais partagé</div>`;
+  } else if(mode==='photo'){
+    zone.innerHTML=`
+      <div style="border:2px dashed var(--border2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:#fff" onclick="document.getElementById('r-photo').click()"
+        onmouseenter="this.style.borderColor='var(--accent)'"
+        onmouseleave="this.style.borderColor='var(--border2)'">
+        <input type="file" id="r-photo" accept="image/*" capture="environment" style="display:none" onchange="previewPhoto(this)"/>
+        <div id="photo-preview" style="font-size:40px;margin-bottom:8px">📷</div>
+        <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px">Photographier ma pièce</div>
+        <div style="font-size:11px;color:var(--muted)">CNI, Passeport ou Permis de conduire</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">🔒 Photo transmise uniquement à l'équipe KoneKt</div>`;
+  } else {
+    zone.innerHTML=`
+      <div style="background:rgba(212,160,23,.1);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center">
+        <span style="font-size:20px">⏰</span>
+        <div style="font-size:12px;color:var(--text2)">Tu pourras vérifier ton profil plus tard depuis tes <strong>Paramètres</strong>.</div>
+      </div>`;
+  }
+}
+
+function previewPhoto(input){
+  if(input.files && input.files[0]){
+    const reader = new FileReader();
+    reader.onload = e => {
+      const prev = document.getElementById('photo-preview');
+      if(prev) prev.innerHTML = `<img src="${e.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:10px;margin-bottom:4px"/>`;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+async function submitRegister(role){
+  const nom=$('r-nom').value.trim();
+  const email=$('r-email').value.trim();
+  const pass=$('r-pass').value.trim();
+  if(!nom||!email||!pass){ showToast('Remplis tous les champs obligatoires.','var(--err)'); return; }
+  if(pass.length<6){ showToast('Le mot de passe doit faire au moins 6 caractères.','var(--err)'); return; }
+  const btn=$('register-btn');
+  if(btn){ btn.textContent='Création en cours...'; btn.disabled=true; }
+  try {
+    const metier=($('r-metier')||{}).value||'';
+    const ville=($('r-ville')||{}).value||'';
+    const tel=($('r-tel')||{}).value||'';
+
+    // Vérification identité
+    let verifStatut='non_soumis';
+    let cni='';
+    let photoVerif=false;
+    if(role==='prestataire'){
+      const cniEl=$('r-cni');
+      const photoEl=$('r-photo');
+      if(cniEl && cniEl.value.trim()){
+        cni=cniEl.value.trim();
+        verifStatut='en_attente'; // sera validé par admin
+      } else if(photoEl && photoEl.files && photoEl.files[0]){
+        photoVerif=true;
+        verifStatut='en_attente';
+      }
+    }
+
+    const user = await window.FB.fbRegister(email, pass, role, nom, {metier, ville, tel, cni, verifStatut});
+    STATE.user = { uid:user.uid, email, role, nom, metier, ville, tel, verifStatut };
+    STATE.screen='app';
+    STATE.tab='home';
+    if(verifStatut==='en_attente'){
+      showToast('✅ Compte créé ! Vérification en cours 🛡️');
+    } else {
+      showToast(`✅ Bienvenue ${nom} !`);
+    }
+    render();
+  } catch(e) {
+    let msg = 'Erreur lors de la création du compte.';
+    if(e.code==='auth/email-already-in-use') msg='Cet email est déjà utilisé.';
+    if(e.code==='auth/invalid-email') msg='Email invalide.';
+    if(e.code==='auth/weak-password') msg='Mot de passe trop faible.';
+    showToast(msg,'var(--err)');
+    if(btn){ btn.textContent=role==='prestataire'?'Créer mon profil prestataire':'Créer mon compte'; btn.disabled=false; }
+  }
+}
+
+// ══════════════════════════════════════════════
+//  ADMIN PIN
+// ══════════════════════════════════════════════
+let pinVal='', pinError=false;
+
+function showAdminPin(){
+  pinVal=''; pinError=false;
+  document.body.insertAdjacentHTML('beforeend',`
+    <div class="modal-overlay" id="pin-modal" style="align-items:center;padding:24px">
+      <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:24px;padding:32px 28px;width:100%;max-width:320px;text-align:center;animation:fadeUp .3s ease" id="pin-box">
+        <div style="font-size:40px;margin-bottom:12px">🛡️</div>
+        <h2 style="font-size:19px;font-weight:800;margin-bottom:6px">Accès Administrateur</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:28px">Entrez le code PIN administrateur</p>
+        <div id="pin-dots" style="display:flex;justify-content:center;gap:16px;margin-bottom:28px"></div>
+        <div id="pin-error" style="color:var(--err);font-size:12px;font-weight:700;margin-bottom:12px;display:none">Code incorrect. Réessayez.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-bottom:14px">
+          ${["1","2","3","4","5","6","7","8","9","","0","⌫"].map((k,i)=>
+            k===''?`<div></div>`:
+            `<button onclick="pinKey('${k}')" style="height:58px;border-radius:13px;background:var(--card);border:1.5px solid var(--border);color:${k==='⌫'?'var(--err)':'var(--text)'};font-size:${k==='⌫'?'20':'22'}px;font-weight:700">${k}</button>`
+          ).join('')}
+        </div>
+        <button class="btn-ghost" onclick="closePin()">Annuler</button>
+      </div>
+    </div>`);
+  renderPinDots();
+}
+
+function renderPinDots(){
+  const d=$('pin-dots');
+  if(!d) return;
+  d.innerHTML=[0,1,2,3].map(i=>`
+    <div style="width:18px;height:18px;border-radius:50%;background:${i<pinVal.length?(pinError?'var(--err)':'var(--gold)'):'var(--border)'};border:2px solid ${i<pinVal.length?(pinError?'var(--err)':'var(--gold)'):'var(--border)'};transition:all .2s;transform:${i<pinVal.length?'scale(1.15)':'scale(1)'}"></div>
+  `).join('');
+}
+
+function pinKey(k){
+  if(k==='⌫'){ pinVal=pinVal.slice(0,-1); pinError=false; $('pin-error').style.display='none'; renderPinDots(); return; }
+  if(pinVal.length>=4) return;
+  pinVal+=k;
+  renderPinDots();
+  if(pinVal.length===4){
+    if(pinVal===ADMIN_PIN){
+      setTimeout(()=>{ closePin(); goRegister('admin'); },300);
+    } else {
+      pinError=true; renderPinDots();
+      $('pin-error').style.display='block';
+      const box=$('pin-box'); box.style.animation='shakeX .6s ease';
+      setTimeout(()=>{ pinVal=''; pinError=false; renderPinDots(); $('pin-error').style.display='none'; box.style.animation=''; },700);
+    }
+  }
+}
+
+function closePin(){ const m=$('pin-modal'); if(m) m.remove(); }
+
+// ══════════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════════
+function renderLogin(){
+  setNav(false);
+  s(`<div id="login-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:32px 24px;background:var(--bg);position:relative;overflow:hidden">
+    <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:var(--accent);opacity:.05;pointer-events:none"></div>
+    <div style="width:100%;max-width:400px;animation:fadeUp .5s cubic-bezier(.22,1,.36,1)">
+      <button onclick="STATE.screen='welcome';render()" style="background:var(--sand);border:none;border-radius:12px;color:var(--text2);font-size:18px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin-bottom:28px;font-weight:700">←</button>
+      <div style="margin-bottom:28px">
+        <h2 style="font-size:26px;font-weight:800;color:var(--text);letter-spacing:-.5px;margin-bottom:6px">Bon retour 👋</h2>
+        <p style="color:var(--muted);font-size:15px">Connecte-toi à ton compte KoneKt</p>
+      </div>
+      <div class="input-wrap"><label>Email</label><div class="input-field"><input type="email" id="l-email" placeholder="ton@email.com"/></div></div>
+      <div class="input-wrap"><label>Mot de passe</label><div class="input-field"><input type="password" id="l-pass" placeholder="••••••••"/></div></div>
+      <button class="btn btn-primary" onclick="doLogin()" style="margin-top:6px;border-radius:16px;font-size:15px;padding:16px">Se connecter</button>
+      <p style="text-align:center;color:var(--muted);font-size:14px;margin-top:22px">Pas encore de compte ? <button class="btn-ghost" onclick="STATE.screen='welcome';render()">S'inscrire →</button></p>
+    </div>
+  </div>`);
+}
+
+async function doLogin(){
+  const email=$('l-email').value.trim();
+  const pass=$('l-pass').value.trim();
+  if(!email||!pass){ showToast('Remplis tous les champs.','#EF4444'); return; }
+  const btn=document.querySelector('#login-screen .btn-primary');
+  if(btn){ btn.textContent='Connexion...'; btn.disabled=true; }
+  try {
+    const user = await window.FB.fbLogin(email, pass);
+    STATE.user = user;
+    STATE.screen='app';
+    STATE.tab = user.role==='admin'?'admin':'home';
+    render();
+  } catch(e) {
+    let msg = 'Une erreur est survenue. Réessaie.';
+    if(e.code==='auth/user-not-found'||e.code==='auth/invalid-credential') msg='Aucun compte avec cet email.';
+    if(e.code==='auth/wrong-password') msg='Mot de passe incorrect.';
+    if(e.code==='auth/invalid-email') msg='Email invalide.';
+    if(e.code==='auth/too-many-requests') msg='Trop de tentatives. Réessaie dans quelques minutes.';
+    if(e.code==='auth/network-request-failed') msg='Problème de connexion internet.';
+    showToast(msg,'var(--err)');
+    if(btn){ btn.textContent='Se connecter'; btn.disabled=false; }
+  }
+}
+
+// ══════════════════════════════════════════════
+//  APP SHELL
+// ══════════════════════════════════════════════
+function renderApp(){
+  const t=STATE.tab;
+  const isAdmin=STATE.user&&STATE.user.role==='admin';
+
+  if(isAdmin){
+    // Admin has its own nav inside
+    $('bottom-nav').className='';
+    renderAdmin();
+    return;
+  }
+
+  setNav(true, t);
+  if(t==='home') renderHome();
+  else if(t==='msgs') { if(selConvId) renderChat(); else renderMsgList(); }
+  else if(t==='cmds') { if(selCmdId) renderCmdDetail(); else renderCmdList(); }
+  else if(t==='profile') renderProfile();
+}
+
+function goTab(tab){
+  STATE.tab=tab; selConvId=null; selCmdId=null; STATE.selPrest=null;
+  renderApp();
+}
+
+// ══════════════════════════════════════════════
+//  HOME — LISTE PRESTATAIRES
+// ══════════════════════════════════════════════
+function renderHome(){
+  if(STATE.selPrest){ renderPrestDetail(); return; }
+  const u=STATE.user;
+  const filtered=PRESTS.filter(p=>
+    (activeCat==='all'||p.cat===activeCat)&&
+    (p.nom.toLowerCase().includes(searchVal.toLowerCase())||p.metier.toLowerCase().includes(searchVal.toLowerCase()))
+  );
+  const catBtns=CATS.map(c=>`
+    <button onclick="setCat('${c.id}')" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:none;background:${activeCat===c.id?'var(--accent)':'var(--sand)'};color:${activeCat===c.id?'#fff':'var(--text2)'};font-size:12px;font-weight:700;transition:all .2s">
+      <span>${c.icon}</span><span>${c.label}</span>
+    </button>`).join('');
+  const cards=filtered.map((p,i)=>`
+    <div onclick="selPrest(${p.id})" style="background:#fff;border:1.5px solid var(--border);border-radius:22px;padding:0;cursor:pointer;animation:fadeUp .45s cubic-bezier(.22,1,.36,1) ${i*.06}s both;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 12px rgba(26,18,8,.06);transition:transform .2s,box-shadow .2s"
+      onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(26,18,8,.12)'"
+      onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(26,18,8,.06)'">
+      <!-- Bande couleur en haut -->
+      <div style="height:5px;background:${p.couleur};"></div>
+      <div style="padding:15px 16px">
+        <div style="display:flex;align-items:flex-start;gap:13px;margin-bottom:11px">
+          <div class="avatar" style="width:52px;height:52px;background:${p.couleur}18;font-size:26px;flex-shrink:0">${p.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-weight:800;font-size:15px;color:var(--text)">${p.nom}</span>
+              ${p.verifie?'<span style="font-size:11px;background:rgba(26,138,74,.12);color:var(--ok);padding:1px 6px;border-radius:20px;font-weight:700">✓ Vérifié</span>':''}
+            </div>
+            <div style="color:${p.couleur};font-size:12px;font-weight:700;margin-top:2px">${p.metier}</div>
+            <div style="color:var(--muted);font-size:11px;margin-top:3px;display:flex;align-items:center;gap:4px">📍 ${p.ville}</div>
+          </div>
+          <div style="padding:4px 10px;border-radius:50px;background:${p.dispo?'rgba(26,138,74,.1)':'rgba(204,34,34,.08)'};color:${p.dispo?'var(--ok)':'var(--err)'};font-size:10px;font-weight:800;flex-shrink:0;white-space:nowrap">${p.dispo?'● Dispo':'○ Occupé'}</div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:11px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.bio}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:13px">
+          ${p.tags.map(t=>`<span style="background:var(--sand);color:var(--text2);font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600">${t}</span>`).join('')}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">★</span><span style="font-weight:700;font-size:13px;color:var(--text)">${p.note}</span><span style="color:var(--muted);font-size:12px">(${p.avis})</span></div>
+          <span style="color:var(--accent);font-weight:800;font-size:14px">${p.tarif?fmt(p.tarif)+' F/'+p.unite:'Sur devis'}</span>
+        </div>
+      </div>
+    </div>`).join('');
+  s(`
+    <div style="padding-bottom:90px;background:var(--bg)">
+      <!-- Header sticky -->
+      <div style="padding:20px 16px 0;background:rgba(250,250,248,.92);position:sticky;top:0;z-index:10;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.5px">📍 Tout le Cameroun</div>
+            <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lg-hm" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1A8A7A"/><stop offset="100%" stop-color="#E8521A"/></linearGradient></defs><circle cx="50" cy="50" r="46" fill="#1A1208" stroke="url(#lg-hm)" stroke-width="4"/><path d="M 15 50 A 35 35 0 0 1 85 50" stroke="#E8521A" stroke-width="2" stroke-dasharray="4 3" fill="none" opacity="0.4"/><path d="M 85 50 A 35 35 0 0 1 15 50" stroke="#1A8A7A" stroke-width="2" stroke-dasharray="4 3" fill="none" opacity="0.4"/><line x1="20" y1="22" x2="20" y2="78" stroke="#1A8A7A" stroke-width="7" stroke-linecap="round"/><line x1="20" y1="50" x2="44" y2="22" stroke="#1A8A7A" stroke-width="7" stroke-linecap="round"/><line x1="20" y1="50" x2="44" y2="78" stroke="#1A8A7A" stroke-width="7" stroke-linecap="round"/><line x1="80" y1="22" x2="80" y2="78" stroke="#E8521A" stroke-width="7" stroke-linecap="round"/><line x1="80" y1="50" x2="56" y2="22" stroke="#E8521A" stroke-width="7" stroke-linecap="round"/><line x1="80" y1="50" x2="56" y2="78" stroke="#E8521A" stroke-width="7" stroke-linecap="round"/><circle cx="50" cy="50" r="8" fill="white"/><circle cx="50" cy="50" r="4" fill="#D4A017"/></svg>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="width:40px;height:40px;border-radius:14px;background:#fff;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:var(--shadow)">🔔</div>
+          </div>
+        </div>
+        <!-- Barre de recherche -->
+        <div style="display:flex;align-items:center;background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:0 14px;margin-bottom:13px;box-shadow:var(--shadow)">
+          <span style="color:var(--muted);margin-right:8px;font-size:16px">🔍</span>
+          <input id="search-inp" value="${searchVal}" oninput="doSearch(this.value)" onkeydown="if(event.key==='Enter'){this.blur();}" placeholder="Rechercher un service..." style="flex:1;background:transparent;border:none;color:var(--text);font-size:14px;padding:13px 0;font-family:'Plus Jakarta Sans',sans-serif"/>
+          ${searchVal?`<button onclick="doSearch('')" style="background:none;border:none;color:var(--muted);font-size:18px;line-height:1">×</button>`:''}
+        </div>
+        <!-- Filtres catégories -->
+        <div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:14px;scrollbar-width:none;-ms-overflow-style:none">${catBtns}</div>
+      </div>
+      <!-- Bannière hero -->
+      <div style="margin:4px 16px 18px;border-radius:24px;padding:20px 22px;background:var(--accent);overflow:hidden;position:relative;box-shadow:0 8px 32px rgba(232,82,26,.28)">
+        <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.1)"></div>
+        <div style="position:absolute;bottom:-40px;right:60px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.07)"></div>
+        <div style="position:relative">
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Plateforme N°1 au Cameroun</div>
+          <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.25;margin-bottom:14px">Trouvez le bon<br>prestataire, vite.</div>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);color:#fff;padding:8px 14px;border-radius:50px;font-size:12px;font-weight:700">🔗 ${PRESTS.length} prestataires actifs</div>
+        </div>
+      </div>
+      <!-- Liste -->
+      <div style="padding:0 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 id="prest-count" style="font-weight:800;font-size:16px;color:var(--text)">${filtered.length} prestataire${filtered.length!==1?'s':''}</h3>
+          <span id="prest-dispo" style="font-size:12px;color:var(--muted);font-weight:600">${filtered.filter(p=>p.dispo).length} disponibles</span>
+        </div>
+        <div id="prest-list">${filtered.length===0?`<div style="text-align:center;padding:56px 0"><div style="font-size:56px;margin-bottom:14px">🔍</div><div style="font-weight:800;color:var(--text);margin-bottom:6px">Aucun résultat</div><div style="color:var(--muted);font-size:13px">Essaie un autre mot-clé</div></div>`:cards}</div>
+      </div>
+    </div>`);
+}
+
+function setCat(c){ activeCat=c; renderHome(); }
+function doSearch(v){
+  searchVal=v;
+  // Only update the results, not the whole page (prevents cursor jumping)
+  const filtered = PRESTS.filter(p=>
+    !searchVal ||
+    p.nom.toLowerCase().includes(searchVal.toLowerCase()) ||
+    p.metier.toLowerCase().includes(searchVal.toLowerCase()) ||
+    p.ville.toLowerCase().includes(searchVal.toLowerCase()) ||
+    p.tags.some(t=>t.toLowerCase().includes(searchVal.toLowerCase()))
+  );
+  const listEl = document.getElementById('prest-list');
+  if(listEl){
+    if(filtered.length===0){
+      listEl.innerHTML=`<div style="text-align:center;padding:60px 20px"><div style="font-size:56px;margin-bottom:12px">🔍</div><div style="font-weight:800;font-size:18px;color:var(--text)">Aucun résultat</div><div style="color:var(--muted);font-size:14px;margin-top:6px">Essaie un autre mot-clé</div></div>`;
+    } else {
+      listEl.innerHTML = filtered.map((p,i)=>prestCard(p,i)).join('');
+    }
+    // Update count
+    const countEl = document.getElementById('prest-count');
+    if(countEl) countEl.textContent = filtered.length + ' prestataire' + (filtered.length>1?'s':'');
+    const dispoEl = document.getElementById('prest-dispo');
+    if(dispoEl) dispoEl.textContent = filtered.filter(p=>p.dispo).length + ' disponible' + (filtered.filter(p=>p.dispo).length>1?'s':'');
+  } else {
+    renderHome();
+    // Restore focus after full re-render
+    const inp = document.getElementById('search-inp');
+    if(inp){ inp.focus(); inp.setSelectionRange(v.length, v.length); }
+  }
+  // Show/hide clear button
+  const clearBtn = document.getElementById('search-clear');
+  if(clearBtn) clearBtn.style.display = v ? 'block' : 'none';
+}
+function selPrest(id){ STATE.selPrest=PRESTS.find(p=>p.id===id); renderHome(); }
+
+// ══════════════════════════════════════════════
+//  PRESTATAIRE DETAIL
+// ══════════════════════════════════════════════
+let prestTab='infos';
+function renderPrestDetail(){
+  const p=STATE.selPrest; if(!p) return;
+  const tabs=['infos','avis','contact'];
+  const tabBtns=tabs.map(t=>`<button onclick="setPrestTab('${t}')" style="flex:1;padding:9px;border-radius:11px;border:1.5px solid ${prestTab===t?p.couleur:'var(--border)'};background:${prestTab===t?p.couleur+'22':'transparent'};color:${prestTab===t?p.couleur:'var(--muted)'};font-weight:700;font-size:12px;text-transform:capitalize">${t}</button>`).join('');
+  let tabContent='';
+  if(prestTab==='infos') tabContent=`
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px">
+      <div class="stitle">À propos</div>
+      <p style="font-size:13px;line-height:1.7">${p.bio} Professionnel sérieux et ponctuel, disponible pour toute intervention.</p>
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px">
+      ${p.tags.map((t,i)=>`<div style="display:flex;align-items:center;gap:9px;padding:9px 0;${i<p.tags.length-1?'border-bottom:1px solid var(--border)':''}"><div style="width:7px;height:7px;border-radius:50%;background:${p.couleur};flex-shrink:0"></div><span style="font-size:13px">${t}</span></div>`).join('')}
+    </div>
+    ${p.verifie?`<div style="background:#22C55E11;border:1px solid #22C55E33;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:center"><span style="font-size:24px">🛡️</span><div><div style="font-weight:700;color:var(--ok);font-size:13px">Identité vérifiée</div><div style="color:var(--muted);font-size:12px">Pièce d'identité contrôlée par KoneKt</div></div></div>`:''}`;
+  else if(prestTab==='avis') tabContent=[
+    {n:"Kofi A.",s:5,t:"Excellent travail, très professionnel et ponctuel !"},
+    {n:"Marguerite T.",s:5,t:"Je recommande vivement, résultat impeccable."},
+    {n:"Hervé N.",s:4,t:"Bon travail dans l'ensemble. Prix correct."},
+  ].map(a=>`<div style="background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:7px"><span style="font-weight:700;font-size:13px">${a.n}</span><span class="stars">${stars(a.s)}</span></div><p style="color:var(--muted);font-size:12px;line-height:1.5">${a.t}</p></div>`).join('');
+  else tabContent=`
+    <button class="btn btn-primary" onclick="goTabMsg(${p.id})" style="margin-bottom:10px">💬 Envoyer un message</button>
+    <button class="btn btn-outline" onclick="goTabCmd(${p.id})" style="margin-bottom:12px">📦 Passer une commande</button>
+    <div style="display:flex;gap:10px">
+      <button style="flex:1;padding:13px;border-radius:11px;background:#25D36618;border:1.5px solid #25D36644;color:#25D366;font-weight:700;font-size:13px">💬 WhatsApp</button>
+      <button style="flex:1;padding:13px;border-radius:11px;background:var(--card);border:1.5px solid var(--border);color:var(--text);font-weight:700;font-size:13px">📞 Appeler</button>
+    </div>`;
+  s(`
+    <div style="padding-bottom:80px;animation:fadeUp .3s ease">
+      <div style="background:linear-gradient(180deg,${p.couleur}12,var(--bg));padding:20px 18px 24px;border-bottom:1px solid var(--border);background:var(--bg)">
+        <button onclick="STATE.selPrest=null;renderHome()" style="background:var(--card);border:none;border-radius:11px;color:var(--text);width:38px;height:38px;font-size:19px;margin-bottom:16px;display:flex;align-items:center;justify-content:center">←</button>
+        <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
+          <div class="avatar" style="width:68px;height:68px;background:${p.couleur}22;border:2px solid ${p.couleur}55;font-size:34px">${p.emoji}</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:7px"><h2 style="font-size:19px;font-weight:800">${p.nom}</h2>${p.verifie?'<span>✅</span>':''}</div>
+            <div style="color:${p.couleur};font-weight:700;font-size:14px">${p.metier}</div>
+            <div style="color:var(--muted);font-size:12px;margin-top:3px">📍 ${p.ville}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--sand);border-radius:14px;overflow:hidden;border:1px solid var(--border)">
+          ${[{l:'Note',v:`${p.note} ★`},{l:'Avis',v:p.avis},{l:'Tarif',v:p.tarif?`${p.tarif.toLocaleString()}F`:'Devis'}].map((s,i)=>`<div style="text-align:center;padding:13px 6px;${i<2?'border-right:1px solid var(--border)':''}"><div style="font-weight:800;font-size:14px">${s.v}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${s.l}</div></div>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;padding:14px 16px 0;gap:7px">${tabBtns}</div>
+      <div style="padding:18px 16px">${tabContent}</div>
+    </div>`);
+}
+
+function setPrestTab(t){ prestTab=t; renderPrestDetail(); }
+function goTabMsg(prestId){
+  STATE.selPrest=null;
+  // open or create conv
+  let cv=CONVS.find(c=>c.prestId===prestId);
+  if(!cv){ cv={id:Date.now(),prestId,nonLus:0,statut:"Nouveau",msgs:[]}; CONVS.push(cv); }
+  selConvId=cv.id; STATE.tab='msgs'; renderApp();
+}
+function goTabCmd(prestId){
+  STATE.selPrest=null;
+  newOrderForm={prestId,service:"",adresse:"",date:"",heure:"08:00",duree:1};
+  newOrderStep=0; STATE.tab='cmds';
+  renderApp(); setTimeout(()=>openNewOrder(),100);
+}
+
+// ══════════════════════════════════════════════
+//  MESSAGES
+// ══════════════════════════════════════════════
+function renderMsgList(){
+  const items=CONVS.map((cv,i)=>{
+    const p=prest(cv.prestId); if(!p) return '';
+    const last=cv.msgs[cv.msgs.length-1];
+    return `<div onclick="openConv(${cv.id})" style="display:flex;gap:13px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;background:#fff;animation:fadeUp .4s ease ${i*.07}s both">
+      <div style="position:relative">
+        <div class="avatar" style="width:48px;height:48px;background:${p.couleur}22;border:2px solid ${p.couleur}55;font-size:22px">${p.emoji}</div>
+        ${p.dispo?`<div style="position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;background:var(--ok);border:2px solid var(--surface)"></div>`:''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:14px">${p.nom}</span><span style="font-size:11px;color:var(--muted)">${last?last.time:''}</span></div>
+        <div style="font-size:12px;color:${p.couleur};font-weight:600;margin-bottom:3px">${p.metier}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px">${last?(last.from==='me'?'Vous: ':'')+last.text:''}</span>
+          ${cv.nonLus>0?`<div style="background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${cv.nonLus}</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const totalUnread=CONVS.reduce((a,c)=>a+c.nonLus,0);
+  s(`<div style="padding-bottom:80px">
+    <div style="padding:18px 16px 14px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)">
+      <h2 style="font-size:20px;font-weight:800">Messages ${totalUnread>0?`<span style="color:var(--accent)">(${totalUnread})</span>`:''}</h2>
+    </div>
+    ${CONVS.length===0?`<div style="text-align:center;padding:60px 0"><div style="font-size:56px;margin-bottom:12px">💬</div><div style="font-weight:700">Aucune conversation</div></div>`:items}
+  </div>`);
+}
+
+function openConv(id){
+  CONVS=CONVS.map(c=>c.id===id?{...c,nonLus:0}:c);
+  selConvId=id; renderChat();
+}
+
+let typingTimer=null;
+function renderChat(){
+  const cv=CONVS.find(c=>c.id===selConvId); if(!cv) return;
+  const p=prest(cv.prestId); if(!p) return;
+  const bubbles=cv.msgs.map(m=>{
+    const isMe=m.from==='me';
+    return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};align-items:flex-end;gap:7px;margin-bottom:6px">
+      ${!isMe?`<div class="avatar" style="width:26px;height:26px;background:${p.couleur}22;border:1px solid ${p.couleur}55;font-size:12px">${p.emoji}</div>`:''}
+      <div>
+        <div style="background:${isMe?`linear-gradient(135deg,var(--accent),var(--accl))`:'#1A2E45'};color:var(--text);padding:10px 14px;border-radius:${isMe?'17px 17px 4px 17px':'17px 17px 17px 4px'};font-size:13px;line-height:1.5;max-width:240px;${isMe?'box-shadow:0 3px 12px #FF6B2B33':''}">${m.text}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;text-align:${isMe?'right':'left'}">${m.time}${isMe?' ✓✓':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  s(`<div style="display:flex;flex-direction:column;height:100%">
+    <div style="padding:12px 14px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;flex-shrink:0;position:sticky;top:0;z-index:5">
+      <button onclick="selConvId=null;renderMsgList()" style="background:var(--card);border:none;border-radius:10px;color:var(--text);width:36px;height:36px;font-size:17px;display:flex;align-items:center;justify-content:center">←</button>
+      <div class="avatar" style="width:40px;height:40px;background:${p.couleur}22;border:1.5px solid ${p.couleur}55;font-size:20px">${p.emoji}</div>
+      <div style="flex:1"><div style="font-weight:800;font-size:14px">${p.nom}</div><div id="chat-status" style="font-size:11px;color:${p.couleur};font-weight:600">${p.dispo?'En ligne':'Hors ligne'}</div></div>
+      <button style="width:34px;height:34px;border-radius:10px;background:#25D36618;border:1px solid #25D36633;font-size:17px">💬</button>
+      <button style="width:34px;height:34px;border-radius:10px;background:var(--card);border:1px solid var(--border);font-size:17px">📞</button>
+    </div>
+    <div id="chat-msgs" style="flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch">${bubbles}<div id="chat-bottom"></div></div>
+    <div id="typing-ind" style="padding:6px 14px;display:none">
+      <div style="display:flex;align-items:flex-end;gap:7px">
+        <div class="avatar" style="width:26px;height:26px;background:${p.couleur}22;border:1px solid ${p.couleur}55;font-size:12px">${p.emoji}</div>
+        <div style="background:#1A2E45;padding:10px 14px;border-radius:17px 17px 17px 4px;display:flex;gap:4px">
+          <div style="width:5px;height:5px;border-radius:50%;background:var(--muted);animation:pulse 1.2s ease 0s infinite"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:var(--muted);animation:pulse 1.2s ease .2s infinite"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:var(--muted);animation:pulse 1.2s ease .4s infinite"></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px 14px 18px;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:flex-end;gap:8px;flex-shrink:0">
+      <div style="flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:9px 13px">
+        <textarea id="chat-inp" placeholder="Écrire un message..." rows="1" onkeydown="chatEnter(event)" style="width:100%;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;max-height:80px;overflow-y:auto"></textarea>
+      </div>
+      <button id="send-btn" onclick="sendMsg()" style="width:42px;height:42px;border-radius:13px;background:var(--card);border:1.5px solid var(--border);font-size:18px;display:flex;align-items:center;justify-content:center">➤</button>
+    </div>
+  </div>`);
+  setTimeout(()=>{ const b=$('chat-bottom'); if(b) b.scrollIntoView(); },100);
+}
+
+function chatEnter(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } }
+
+function sendMsg(){
+  const inp=$('chat-inp'); if(!inp) return;
+  const txt=inp.value.trim(); if(!txt) return;
+  inp.value='';
+  const cv=CONVS.find(c=>c.id===selConvId); if(!cv) return;
+  cv.msgs.push({id:Date.now(),from:'me',text:txt,time:now(),date:'Aujourd\'hui'});
+  renderChat();
+  // Auto reply
+  const ti=$('typing-ind'); if(ti) ti.style.display='block';
+  const cs=$('chat-status'); if(cs){ cs.textContent='En train d\'écrire...'; cs.style.color='var(--teal)'; }
+  const replies=["Bien reçu !","D'accord, noté.","Je reviens vers vous rapidement.","Parfait ! 👍","Laissez-moi vérifier ça."];
+  clearTimeout(typingTimer);
+  typingTimer=setTimeout(()=>{
+    cv.msgs.push({id:Date.now()+1,from:'them',text:replies[Math.floor(Math.random()*replies.length)],time:now(),date:'Aujourd\'hui'});
+    renderChat();
+  },1800);
+}
+
+// ══════════════════════════════════════════════
+//  COMMANDES
+// ══════════════════════════════════════════════
+function renderCmdList(){
+  const actives=CMDS.filter(c=>['en_attente','confirme','en_cours'].includes(c.statut));
+  const terminees=CMDS.filter(c=>['termine','annule'].includes(c.statut));
+  const cmdTab=window._cmdTab||'active';
+  const list=cmdTab==='active'?actives:terminees;
+  const cards=list.map((cmd,i)=>{
+    const p=prest(cmd.prestId); if(!p) return '';
+    const st=STATUTS[cmd.statut];
+    return `<div onclick="openCmd('${cmd.id}')" style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;animation:fadeUp .4s ease ${i*.06}s both;margin-bottom:11px">
+      <div style="background:${p.couleur}14;padding:12px 14px;display:flex;gap:11px;align-items:center">
+        <div class="avatar" style="width:40px;height:40px;background:${p.couleur}22;border:1.5px solid ${p.couleur}55;font-size:20px">${p.emoji}</div>
+        <div style="flex:1"><div style="font-weight:800;font-size:14px">${p.nom}</div><div style="font-size:11px;color:var(--muted)">${cmd.id}</div></div>
+        <span style="background:${st.color}22;color:${st.color};font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px">${st.icon} ${st.label}</span>
+      </div>
+      <div style="padding:11px 14px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:7px">${cmd.service}</div>
+        <div style="display:flex;justify-content:space-between">
+          <div style="display:flex;gap:12px"><span style="font-size:11px;color:var(--muted)">📅 ${new Date(cmd.date).toLocaleDateString('fr-FR')}</span><span style="font-size:11px;color:var(--muted)">🕐 ${cmd.heure}</span></div>
+          <span style="font-weight:800;color:var(--accent);font-size:14px">${fmt(cmd.total)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  s(`<div style="padding-bottom:80px">
+    <div style="padding:18px 16px 0;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h2 style="font-size:20px;font-weight:800">Mes commandes</h2>
+        <button onclick="openNewOrder()" style="background:linear-gradient(135deg,var(--accent),var(--accl));border:none;border-radius:11px;color:#fff;padding:9px 14px;font-weight:700;font-size:12px;box-shadow:0 4px 14px #FF6B2B44">+ Nouvelle</button>
+      </div>
+      <div style="display:flex">
+        <button onclick="setCmdTab('active')" style="flex:1;padding:11px;border:none;border-bottom:2.5px solid ${cmdTab==='active'?'var(--accent)':'transparent'};background:transparent;color:${cmdTab==='active'?'var(--accent)':'var(--muted)'};font-weight:700;font-size:13px">En cours (${actives.length})</button>
+        <button onclick="setCmdTab('done')" style="flex:1;padding:11px;border:none;border-bottom:2.5px solid ${cmdTab==='done'?'var(--accent)':'transparent'};background:transparent;color:${cmdTab==='done'?'var(--accent)':'var(--muted)'};font-weight:700;font-size:13px">Terminées (${terminees.length})</button>
+      </div>
+    </div>
+    <div style="padding:14px 14px">
+      ${list.length===0?`<div style="text-align:center;padding:50px 0"><div style="font-size:56px;margin-bottom:12px">📋</div><div style="font-weight:700;margin-bottom:6px">Aucune commande</div><button class="btn btn-primary" onclick="openNewOrder()" style="margin-top:14px">+ Nouvelle commande</button></div>`:cards}
+    </div>
+  </div>`);
+}
+
+function setCmdTab(t){ window._cmdTab=t; renderCmdList(); }
+function openCmd(id){ selCmdId=id; renderCmdDetail(); }
+
+function renderCmdDetail(){
+  const cmd=CMDS.find(c=>c.id===selCmdId); if(!cmd) return;
+  const p=prest(cmd.prestId); if(!p) return;
+  const st=STATUTS[cmd.statut];
+  const tl=[
+    {l:"Commande envoyée",done:true},
+    {l:"Acceptée par le prestataire",done:['confirme','en_cours','termine'].includes(cmd.statut)},
+    {l:"Intervention en cours",done:['en_cours','termine'].includes(cmd.statut)},
+    {l:"Prestation terminée",done:cmd.statut==='termine'},
+  ];
+  s(`<div style="padding-bottom:80px;animation:fadeUp .3s ease">
+    <div style="background:linear-gradient(180deg,${p.couleur}12,var(--bg));padding:18px 16px 22px;border-bottom:1px solid var(--border)">
+      <button onclick="selCmdId=null;renderCmdList()" style="background:var(--card);border:none;border-radius:10px;color:var(--text);width:36px;height:36px;font-size:18px;display:flex;align-items:center;justify-content:center;margin-bottom:14px">←</button>
+      <div style="display:flex;gap:13px;align-items:center;margin-bottom:13px">
+        <div class="avatar" style="width:54px;height:54px;background:${p.couleur}22;border:2px solid ${p.couleur}55;font-size:26px">${p.emoji}</div>
+        <div><div style="font-weight:800;font-size:17px">${p.nom}</div><div style="color:${p.couleur};font-weight:600;font-size:13px">${p.metier}</div></div>
+      </div>
+      <span style="background:${st.color}22;color:${st.color};font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px">${st.icon} ${st.label}</span>
+    </div>
+    <div style="padding:16px">
+      <div style="background:var(--sand);border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px">
+        ${[{i:"🛠️",l:"Service",v:cmd.service},{i:"📍",l:"Adresse",v:cmd.adresse},{i:"📅",l:"Date",v:`${new Date(cmd.date).toLocaleDateString('fr-FR')} à ${cmd.heure}`},{i:"💰",l:"Total",v:fmt(cmd.total)}].map((r,i,arr)=>`<div style="display:flex;gap:13px;padding:12px 14px;${i<arr.length-1?'border-bottom:1px solid var(--border)':''}"><span style="font-size:18px">${r.i}</span><div><div style="font-size:10px;color:var(--muted);font-weight:700">${r.l}</div><div style="font-size:13px;font-weight:${r.l==='Total'?800:400};color:${r.l==='Total'?'var(--accent)':'var(--text)'}">${r.v}</div></div></div>`).join('')}
+      </div>
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:16px;border:1px solid var(--border);margin-bottom:14px">
+        <div class="stitle">Suivi de la commande</div>
+        ${tl.map((t,i)=>`
+          <div style="display:flex;gap:12px;align-items:flex-start;${i<tl.length-1?'margin-bottom:16px':''}">
+            <div style="display:flex;flex-direction:column;align-items:center">
+              <div style="width:26px;height:26px;border-radius:50%;background:${t.done?'#22C55E33':'var(--border)'};border:2px solid ${t.done?'var(--ok)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${t.done?'✓':''}</div>
+              ${i<tl.length-1?`<div style="width:2px;height:18px;background:${t.done?'#22C55E55':'var(--border)'};margin-top:3px"></div>`:''}
+            </div>
+            <div style="padding-top:3px;font-size:13px;font-weight:${t.done?700:400};color:${t.done?'var(--text)':'var(--muted)'}">${t.l}</div>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px">
+        ${cmd.statut==='termine'?`<button class="btn btn-primary" onclick="openReview('${cmd.id}')">⭐ Évaluer la prestation</button>`:''}
+        ${['confirme','en_attente'].includes(cmd.statut)?`<button class="btn btn-danger" onclick="cancelCmd('${cmd.id}')">Annuler la commande</button>`:''}
+        <button class="btn btn-outline">💬 Contacter le prestataire</button>
+      </div>
+    </div>
+  </div>`);
+}
+
+function cancelCmd(id){
+  CMDS=CMDS.map(c=>c.id===id?{...c,statut:'annule'}:c);
+  selCmdId=null; renderCmdList();
+  showToast('Commande annulée.','#EF4444');
+}
+
+// ══════════════════════════════════════════════
+//  NOUVELLE COMMANDE
+// ══════════════════════════════════════════════
+function openNewOrder(){
+  if(!newOrderForm.prestId){ newOrderStep=0; newOrderForm={prestId:null,service:"",adresse:"",date:"",heure:"08:00",duree:1}; }
+  renderNewOrderModal();
+}
+
+function renderNewOrderModal(){
+  const existing=$('new-order-modal'); if(existing) existing.remove();
+  const p=newOrderForm.prestId?PRESTS.find(x=>x.id===newOrderForm.prestId):null;
+  const total=p&&p.tarif?p.tarif*newOrderForm.duree:0;
+  const steps=['Prestataire','Détails','Planning'];
+  const stepBar=steps.map((st,i)=>`<div style="flex:1"><div style="height:3px;border-radius:2px;background:${i<=newOrderStep?'var(--accent)':'var(--border)'}"></div><div style="font-size:9px;color:${i<=newOrderStep?'var(--accent)':'var(--muted)'};margin-top:3px;font-weight:700">${st}</div></div>`).join('');
+  let body='';
+  if(newOrderStep===0){
+    body=PRESTS.map(pr=>`
+      <div onclick="pickPrest(${pr.id})" style="background:${newOrderForm.prestId===pr.id?pr.couleur+'18':'var(--card)'};border:1.5px solid ${newOrderForm.prestId===pr.id?pr.couleur:'var(--border)'};border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:9px">
+        <div class="avatar" style="width:44px;height:44px;background:${pr.couleur}22;border:1.5px solid ${pr.couleur}55;font-size:20px">${pr.emoji}</div>
+        <div style="flex:1"><div style="font-weight:700;font-size:14px">${pr.nom}</div><div style="color:${pr.couleur};font-size:12px">${pr.metier} · ${pr.ville}</div></div>
+        <div style="text-align:right"><div style="font-weight:800;color:var(--accent);font-size:13px">${pr.tarif?`${pr.tarif.toLocaleString()} F`:'Devis'}</div><div style="font-size:10px;color:var(--muted)">/${pr.unite}</div></div>
+      </div>`).join('');
+  } else if(newOrderStep===1){
+    body=`
+      <div class="input-wrap"><label>Décrivez votre besoin *</label><div class="input-field"><input id="of-service" value="${newOrderForm.service}" oninput="newOrderForm.service=this.value" placeholder="Ex: Réparation fuite cuisine"/></div></div>
+      <div class="input-wrap"><label>Adresse d'intervention *</label><div class="input-field"><input id="of-adresse" value="${newOrderForm.adresse}" oninput="newOrderForm.adresse=this.value" placeholder="Quartier, ville"/></div></div>`;
+  } else {
+    const hours=Array.from({length:13},(_,i)=>`${String(i+7).padStart(2,'0')}:00`);
+    body=`
+      <div class="input-wrap"><label>Date *</label><div class="input-field"><input type="date" id="of-date" value="${newOrderForm.date}" oninput="newOrderForm.date=this.value" min="2026-03-02"/></div></div>
+      <div style="margin-bottom:14px"><label style="font-size:12px;color:var(--muted);font-weight:700;display:block;margin-bottom:8px">Heure de début *</label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px">${hours.map(h=>`<button onclick="newOrderForm.heure='${h}';renderNewOrderModal()" style="padding:7px 12px;border-radius:9px;border:1.5px solid ${newOrderForm.heure===h?'var(--accent)':'var(--border)'};background:${newOrderForm.heure===h?'#FF6B2B22':'var(--card)'};color:${newOrderForm.heure===h?'var(--accent)':'var(--muted)'};font-size:12px;font-weight:700">${h}</button>`).join('')}</div></div>
+      <div style="margin-bottom:14px"><label style="font-size:12px;color:var(--muted);font-weight:700;display:block;margin-bottom:8px">Durée estimée</label>
+      <div style="display:flex;align-items:center;gap:14px">
+        <button onclick="newOrderForm.duree=Math.max(1,newOrderForm.duree-1);renderNewOrderModal()" style="width:38px;height:38px;border-radius:11px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:20px">−</button>
+        <div style="flex:1;text-align:center"><span style="font-size:26px;font-weight:800">${newOrderForm.duree}</span><span style="color:var(--muted);margin-left:5px">h</span></div>
+        <button onclick="newOrderForm.duree++;renderNewOrderModal()" style="width:38px;height:38px;border-radius:11px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:20px">+</button>
+      </div></div>
+      ${p&&p.tarif>0?`<div style="background:#FF6B2B18;border:1.5px solid #FF6B2B44;border-radius:13px;padding:13px 14px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--muted);font-size:13px">${p.tarif.toLocaleString()} × ${newOrderForm.duree}h</span><span style="font-weight:700">${total.toLocaleString()} F</span></div><div style="display:flex;justify-content:space-between;border-top:1px solid #FF6B2B33;padding-top:9px;margin-top:5px"><span style="font-weight:800">Total estimé</span><span style="font-weight:800;font-size:17px;color:var(--accent)">${total.toLocaleString()} FCFA</span></div></div>`:''}`;
+  }
+  const canNext=[newOrderForm.prestId, newOrderForm.service&&newOrderForm.adresse, newOrderForm.date][newOrderStep];
+  document.body.insertAdjacentHTML('beforeend',`
+    <div class="modal-overlay" id="new-order-modal">
+      <div class="modal-sheet" style="padding:0">
+        <div style="padding:18px 18px 0;position:sticky;top:0;background:var(--bg);z-index:1">
+          <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+            <h2 style="font-size:17px;font-weight:800">Nouvelle commande</h2>
+            <button onclick="closeNewOrder()" style="background:var(--card);border:none;border-radius:9px;width:34px;height:34px;color:var(--muted);font-size:16px">✕</button>
+          </div>
+          <div style="display:flex;gap:5px;margin-bottom:18px">${stepBar}</div>
+        </div>
+        <div style="padding:0 18px 22px">
+          ${body}
+          <div style="display:flex;gap:9px;margin-top:18px">
+            ${newOrderStep>0?`<button class="btn btn-outline" onclick="newOrderStep--;renderNewOrderModal()" style="flex:1">← Retour</button>`:''}
+            ${newOrderStep<2
+              ?`<button class="btn btn-primary" onclick="newOrderNext()" style="flex:1;${!canNext?'opacity:.45':''}" ${!canNext?'disabled':''}>Continuer →</button>`
+              :`<button class="btn btn-primary" onclick="confirmOrder()" style="flex:1">✅ Confirmer</button>`}
+          </div>
+        </div>
+      </div>
+    </div>`);
+}
+
+function pickPrest(id){ newOrderForm.prestId=id; renderNewOrderModal(); }
+function newOrderNext(){ newOrderStep++; renderNewOrderModal(); }
+function closeNewOrder(){ const m=$('new-order-modal'); if(m) m.remove(); }
+function confirmOrder(){
+  const p=PRESTS.find(x=>x.id===newOrderForm.prestId);
+  const total=p&&p.tarif?p.tarif*newOrderForm.duree:0;
+  const newCmd={id:`CMD-${String(CMDS.length+1).padStart(3,'0')}`,prestId:newOrderForm.prestId,statut:'en_attente',service:newOrderForm.service,date:newOrderForm.date,heure:newOrderForm.heure,duree:newOrderForm.duree,adresse:newOrderForm.adresse,total,cree:new Date().toISOString().split('T')[0]};
+  CMDS.unshift(newCmd);
+  closeNewOrder();
+  showToast(`✅ Commande envoyée à ${p?.nom} !`);
+  renderCmdList();
+}
+
+// ══════════════════════════════════════════════
+//  REVIEW
+// ══════════════════════════════════════════════
+function openReview(cmdId){
+  reviewNote=0; reviewComment='';
+  document.body.insertAdjacentHTML('beforeend',`
+    <div class="modal-overlay" id="review-modal">
+      <div class="modal-sheet" style="padding:24px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:18px">
+          <h2 style="font-size:17px;font-weight:800">Évaluer la prestation</h2>
+          <button onclick="document.getElementById('review-modal').remove()" style="background:var(--card);border:none;border-radius:9px;width:34px;height:34px;color:var(--muted);font-size:16px">✕</button>
+        </div>
+        <div style="text-align:center;margin-bottom:22px">
+          <div id="rev-stars" style="display:flex;justify-content:center;gap:10px;margin-bottom:10px">
+            ${[1,2,3,4,5].map(i=>`<span onclick="setRevNote(${i})" style="font-size:40px;cursor:pointer;color:${i<=reviewNote?'var(--gold)':'var(--border)'};transition:transform .15s;display:inline-block">★</span>`).join('')}
+          </div>
+          <div id="rev-lbl" style="color:var(--gold);font-weight:700;font-size:13px;min-height:18px">${reviewNote>0?['Mauvais','Passable','Bien','Très bien','Excellent'][reviewNote-1]:''}</div>
+        </div>
+        <div class="input-wrap"><label>Votre commentaire</label><div class="input-field"><textarea id="rev-comment" placeholder="Partagez votre expérience..." rows="3"></textarea></div></div>
+        <button class="btn btn-primary" id="rev-submit" onclick="submitReview('${cmdId}')" style="${reviewNote===0?'opacity:.45':''}">Publier mon évaluation ⭐</button>
+      </div>
+    </div>`);
+}
+
+function setRevNote(n){
+  reviewNote=n;
+  const lbls=['Mauvais','Passable','Bien','Très bien','Excellent'];
+  const starsEl=$('rev-stars');
+  if(starsEl) starsEl.innerHTML=[1,2,3,4,5].map(i=>`<span onclick="setRevNote(${i})" style="font-size:40px;cursor:pointer;color:${i<=n?'var(--gold)':'var(--border)'};transition:transform .15s;display:inline-block;transform:${i<=n?'scale(1.2)':'scale(1)'}"">★</span>`).join('');
+  const lbl=$('rev-lbl'); if(lbl) lbl.textContent=lbls[n-1];
+  const sub=$('rev-submit'); if(sub) sub.style.opacity=n>0?'1':'0.45';
+}
+
+function submitReview(cmdId){
+  if(reviewNote===0) return;
+  const m=$('review-modal'); if(m) m.remove();
+  selCmdId=null; showToast('⭐ Merci pour votre évaluation !');
+  renderCmdList();
+}
+
+// ══════════════════════════════════════════════
+//  PROFIL
+// ══════════════════════════════════════════════
+function renderProfile(){
+  const u=STATE.user||{};
+  s(`<div style="padding:28px 20px 80px;animation:fadeUp .4s ease">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 14px;box-shadow:0 8px 24px #FF6B2B44">${u.role==='prestataire'?'🔧':'👤'}</div>
+      <h2 style="font-size:22px;font-weight:800">${u.nom||'Mon profil'}</h2>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px">${u.email||''}</p>
+      <span style="background:${u.role==='prestataire'?'#FF6B2B22':'#3B82F622'};color:${u.role==='prestataire'?'var(--accent)':'#3B82F6'};font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block;margin-top:8px">${u.role==='prestataire'?'🔧 Prestataire':'👤 Visiteur'}</span>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px">
+      ${[{i:'👤',l:'Modifier mon profil'},{i:'🔔',l:'Notifications'},{i:'🌐',l:'Langue : Français'},{i:'🔒',l:'Sécurité & confidentialité'},{i:'❓',l:'Aide & support'}].map((item,j,arr)=>`<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;${j<arr.length-1?'border-bottom:1px solid var(--border)':''}"><span style="font-size:20px">${item.i}</span><span style="font-size:14px;font-weight:600;flex:1">${item.l}</span><span style="color:var(--muted)">›</span></div>`).join('')}
+    </div>
+    <button class="btn btn-outline" onclick="logout()">Se déconnecter</button>
+  </div>`);
+}
+
+async function logout(){
+  try { await window.FB.fbLogout(); } catch(e){}
+  STATE.user=null; STATE.screen='welcome'; render();
+}
+
+// ══════════════════════════════════════════════
+//  ADMIN
+// ══════════════════════════════════════════════
+function renderAdmin(){
+  const t=adminTab;
+  // Inject admin-specific nav into bottom nav
+  $('bottom-nav').className='show';
+  $('bottom-nav').innerHTML=`
+    <button class="nav-btn ${t==='home'?'active':''}" onclick="setAdminTab('home')"><span class="nav-icon">🏠</span><span class="nav-lbl">Accueil</span></button>
+    <button class="nav-btn ${t==='verifs'?'active':''}" onclick="setAdminTab('verifs')" style="position:relative">
+      <span class="nav-icon">🛡️</span><span class="nav-lbl">Vérifs</span>
+      <div class="nav-badge" style="display:none" id="verif-badge">0</div>
+    </button>
+    <button class="nav-btn ${t==='val'?'active':''}" onclick="setAdminTab('val')" style="position:relative">
+      <span class="nav-icon">⏳</span><span class="nav-lbl">Validations</span>
+      ${pendingPrests.length>0?`<div class="nav-badge">${pendingPrests.length}</div>`:''}
+    </button>
+    <button class="nav-btn ${t==='sigs'?'active':''}" onclick="setAdminTab('sigs')" style="position:relative">
+      <span class="nav-icon">🚨</span><span class="nav-lbl">Signalements</span>
+      ${signals.length>0?`<div class="nav-badge" style="background:var(--err)">${signals.length}</div>`:''}
+    </button>
+    <button class="nav-btn" onclick="logout()"><span class="nav-icon">🚪</span><span class="nav-lbl">Quitter</span></button>`;
+  if(t==='home') renderAdminHome();
+  else if(t==='verifs') renderAdminVerifs();
+  else if(t==='val') renderAdminVal();
+  else if(t==='sigs') renderAdminSigs();
+}
+
+function setAdminTab(t){ adminTab=t; renderAdmin(); }
+
+function renderAdminHome(){
+  const stats=[
+    {l:"Prestataires",v:248,d:"+12 ce mois",i:"🔧",c:"var(--accent)"},
+    {l:"Visiteurs",v:1840,d:"+134 ce mois",i:"👤",c:"var(--teal)"},
+    {l:"Commandes",v:527,d:"+43 ce mois",i:"📦",c:"var(--gold)"},
+    {l:"CA estimé",v:"4,2M F",d:"+18%",i:"💰",c:"var(--purple)"},
+  ];
+  const statCards=stats.map((s,i)=>`<div style="background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:16px;box-shadow:0 2px 10px rgba(26,18,8,.05) 14px;animation:fadeUp .4s ease ${i*.06}s both;position:relative;overflow:hidden"><div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:${s.c}18;pointer-events:none"></div><div style="font-size:26px;margin-bottom:7px">${s.i}</div><div style="font-size:20px;font-weight:800">${s.v}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${s.l}</div><div style="font-size:10px;color:${s.c};font-weight:700;margin-top:5px">${s.d}</div></div>`).join('');
+  s(`<div style="padding:18px 14px 80px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase">Administration</div><div style="font-size:19px;font-weight:800">Kone<span style="color:var(--accent)">Kt</span></div></div>
+      <div style="width:38px;height:38px;border-radius:11px;background:#FF6B2B22;border:1.5px solid #FF6B2B44;display:flex;align-items:center;justify-content:center;font-size:19px">🛡️</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:20px">${statCards}</div>
+    <div onclick="setAdminTab('val')" style="background:#F59E0B18;border:1.5px solid #F59E0B44;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:13px;cursor:pointer;margin-bottom:10px"><span style="font-size:26px">⏳</span><div style="flex:1"><div style="font-weight:700;color:var(--warn)">${pendingPrests.length} validations en attente</div><div style="font-size:11px;color:var(--muted)">Cliquez pour traiter</div></div><span style="color:var(--muted);font-size:17px">›</span></div>
+    <div onclick="setAdminTab('sigs')" style="background:#EF444418;border:1.5px solid #EF444444;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:13px;cursor:pointer"><span style="font-size:26px">🚨</span><div style="flex:1"><div style="font-weight:700;color:var(--err)">${signals.length} signalements ouverts</div><div style="font-size:11px;color:var(--muted)">Cliquez pour examiner</div></div><span style="color:var(--muted);font-size:17px">›</span></div>
+  </div>`);
+}
+
+function renderAdminVal(){
+  const cards=pendingPrests.map((p,i)=>`
+    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .4s ease ${i*.07}s both;margin-bottom:10px">
+      <div style="padding:13px 14px;display:flex;gap:11px;align-items:center">
+        <div class="avatar" style="width:44px;height:44px;background:${p.couleur}22;border:1.5px solid ${p.couleur}55;font-size:22px">${p.emoji}</div>
+        <div style="flex:1"><div style="font-weight:800;font-size:14px">${p.nom}</div><div style="color:${p.couleur};font-size:12px;font-weight:600">${p.metier} · ${p.ville}</div>
+          <span style="background:${p.hasId?'#22C55E22':'#F59E0B22'};color:${p.hasId?'var(--ok)':'var(--warn)'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:5px;display:inline-block">${p.hasId?'🪪 ID soumise':'⚠️ ID manquante'}</span>
+        </div>
+      </div>
+      <div style="display:flex;border-top:1px solid var(--border)">
+        <button onclick="validerPrest('${p.id}','non')" style="flex:1;padding:11px;background:none;border:none;color:var(--err);font-weight:700;font-size:12px;border-right:1px solid var(--border)">✕ Refuser</button>
+        <button onclick="validerPrest('${p.id}','ok')" style="flex:1;padding:11px;background:none;border:none;color:var(--ok);font-weight:700;font-size:12px">✓ Valider</button>
+      </div>
+    </div>`).join('');
+  s(`<div style="padding:18px 14px 80px">
+    <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Validations</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:18px">${pendingPrests.length} demande${pendingPrests.length>1?'s':''} en attente</p>
+    ${pendingPrests.length===0?`<div style="text-align:center;padding:50px 0"><div style="font-size:56px">🎉</div><div style="font-weight:700;margin-top:12px">Tout est traité !</div></div>`:cards}
+  </div>`);
+}
+
+function validerPrest(id,action){
+  pendingPrests=pendingPrests.filter(p=>p.id!==id);
+  showToast(action==='ok'?'✅ Prestataire validé !':'❌ Demande refusée.', action==='ok'?'#22C55E':'#EF4444');
+  renderAdmin();
+}
+
+function renderAdminVerifs(){
+  // Load pending verifications from Firestore (simulated for now with local data)
+  const pendingVerifs = [
+    {id:'v1', nom:'Paul Essomba', metier:'Électricien', cni:'1234567890', type:'numero', soumisLe:'2026-03-05'},
+    {id:'v2', nom:'Brigitte Ngo', metier:'Coiffeuse', cni:'', type:'photo', soumisLe:'2026-03-04'},
+  ];
+  const cards = pendingVerifs.map((v,i)=>`
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:20px;overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow);animation:fadeUp .4s ease ${i*.07}s both">
+      <div style="padding:16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:46px;height:46px;border-radius:14px;background:rgba(232,82,26,.1);display:flex;align-items:center;justify-content:center;font-size:22px">🧑‍🔧</div>
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:15px;color:var(--text)">${v.nom}</div>
+            <div style="font-size:12px;color:var(--muted)">${v.metier}</div>
+          </div>
+          <div style="background:rgba(212,160,23,.15);color:var(--gold);font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px">EN ATTENTE</div>
+        </div>
+        <div style="background:var(--sand);border-radius:14px;padding:12px 14px">
+          ${v.type==='numero'
+            ? `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🪪</span><div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">Numéro CNI soumis</div><div style="font-size:15px;font-weight:800;letter-spacing:2px;color:var(--text);margin-top:2px">${v.cni}</div></div></div>`
+            : `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">📸</span><div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">Photo de pièce soumise</div><div style="font-size:12px;color:var(--text);margin-top:2px">Document transmis par le prestataire</div></div></div>`
+          }
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:10px">Soumis le ${v.soumisLe}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <button onclick="traiterVerif('${v.id}','refuse')" style="padding:14px;background:none;border:none;border-right:1px solid var(--border);color:var(--err);font-weight:700;font-size:13px">✕ Refuser</button>
+        <button onclick="traiterVerif('${v.id}','approuve')" style="padding:14px;background:none;border:none;color:var(--ok);font-weight:800;font-size:13px">✓ Approuver</button>
+      </div>
+    </div>`).join('');
+
+  s(`<div style="padding:20px 16px 90px;background:var(--bg)">
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Administration</div>
+      <h2 style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.5px">Vérifications 🛡️</h2>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px">${pendingVerifs.length} demande${pendingVerifs.length!==1?'s':''} en attente</p>
+    </div>
+    ${pendingVerifs.length===0
+      ?`<div style="text-align:center;padding:60px 0"><div style="font-size:64px;margin-bottom:16px">🎉</div><div style="font-weight:800;font-size:18px;color:var(--text)">Tout est traité !</div><div style="color:var(--muted);font-size:14px;margin-top:6px">Aucune vérification en attente</div></div>`
+      :cards}
+  </div>`);
+}
+
+function traiterVerif(id, action){
+  showToast(action==='approuve'?'✅ Badge ✓ accordé au prestataire !':'❌ Vérification refusée.', action==='approuve'?'var(--ok)':'var(--err)');
+  // In real app: update Firestore doc
+  setTimeout(()=>renderAdminVerifs(), 100);
+}
+
+function renderAdminSigs(){
+  const gc={haute:{c:'var(--err)'},moyenne:{c:'var(--warn)'},basse:{c:'var(--teal)'}};
+  const cards=signals.map((sg,i)=>{
+    const g=gc[sg.gravite];
+    return `<div style="background:var(--card);border:1.5px solid ${g.c}44;border-radius:14px;overflow:hidden;animation:fadeUp .4s ease ${i*.07}s both;margin-bottom:11px">
+      <div style="background:${g.c}18;padding:11px 14px;display:flex;gap:8px;align-items:center">
+        <span style="font-size:17px">🚨</span><span style="font-weight:700;color:${g.c};font-size:13px">${sg.type}</span>
+        <span style="background:${g.c}22;color:${g.c};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:capitalize">${sg.gravite}</span>
+      </div>
+      <div style="padding:12px 14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:3px">De : <b style="color:var(--text)">${sg.de}</b> · Contre : <b style="color:var(--text)">${sg.contre}</b></div>
+        <div style="font-size:13px;background:var(--bg);border-radius:9px;padding:9px 11px;margin:9px 0;line-height:1.5">${sg.desc}</div>
+        <div style="display:flex;gap:8px">
+          <button style="flex:1;padding:9px;border-radius:9px;background:#EF444422;border:1px solid #EF444444;color:var(--err);font-weight:700;font-size:11px">Suspendre</button>
+          <button onclick="closeSig('${sg.id}')" style="flex:1;padding:9px;border-radius:9px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:11px">Clôturer</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  s(`<div style="padding:18px 14px 80px">
+    <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Signalements</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:18px">${signals.length} signalement${signals.length>1?'s':''} ouvert${signals.length>1?'s':''}</p>
+    ${signals.length===0?`<div style="text-align:center;padding:50px 0"><div style="font-size:56px">✅</div><div style="font-weight:700;margin-top:12px">Aucun signalement</div></div>`:cards}
+  </div>`);
+}
+
+function closeSig(id){
+  signals=signals.filter(sg=>sg.id!==id);
+  showToast('✅ Signalement clôturé.');
+  renderAdmin();
+}
+
+// ══════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════
+// Register service worker for PWA install
+if('serviceWorker' in navigator){
+  const swCode = `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>new Response(''))));`;
+  const blob = new Blob([swCode],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+
+// Skip splash on returning visits
+if(localStorage.getItem('konekt_visited')){
+  STATE.screen = 'welcome';
+}
+render();
+// Mark as visited after first load
+setTimeout(()=>localStorage.setItem('konekt_visited','1'), 3000);
+
+// Global click handler for dynamically rendered buttons
+document.addEventListener('click', function(e){
+  if(e.target && e.target.id === 'go-login-btn'){
+    STATE.screen='login'; render();
+  }
+});
+</script>
+</body>
+</html>
