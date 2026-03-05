@@ -414,8 +414,7 @@ function renderWelcome(){
       </div>
       <div style="text-align:center">
         <span style="color:var(--muted);font-size:14px">Déjà un compte ? </span>
-        <button class="btn-ghost" onclick="goLogin()" style="font-size:14px">Se connecter →</button>
-    </div>
+        <button class="btn-ghost" onclick="STATE.screen='login';render()" style="font-size:14px">Se connecter →</button>
   </div>`);
 }
 
