@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>KoneKt QR Code</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: #071428;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 40px 20px;
+}
+.card {
+  background: #0D1F35;
+  border-radius: 32px;
+  padding: 40px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  border: 1.5px solid #1A3A5A;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.logo-text {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: #fff;
+}
+.logo-text .k1 { color: #1A8A4A; }
+.logo-text .k2 { color: #5BB8F5; }
+.qr-container {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 20px;
+  margin: 0 auto 24px;
+  display: inline-block;
+}
+canvas { display: block; }
+.url {
+  font-size: 13px;
+  color: #6A8AAA;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+.tagline {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 600;
+  margin-top: 16px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(26,138,74,.15);
+  color: #1A8A4A;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 50px;
+  margin-top: 12px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo-row">
+    <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#1A8A4A"/><stop offset="100%" stop-color="#5BB8F5"/>
+      </linearGradient></defs>
+      <circle cx="50" cy="50" r="46" fill="#071428" stroke="url(#lg)" stroke-width="3.5"/>
+      <line x1="18" y1="22" x2="18" y2="78" stroke="#1A8A4A" stroke-width="7" stroke-linecap="round"/>
+      <line x1="18" y1="50" x2="44" y2="22" stroke="#1A8A4A" stroke-width="7" stroke-linecap="round"/>
+      <line x1="18" y1="50" x2="44" y2="78" stroke="#1A8A4A" stroke-width="7" stroke-linecap="round"/>
+      <line x1="82" y1="22" x2="82" y2="78" stroke="#5BB8F5" stroke-width="7" stroke-linecap="round"/>
+      <line x1="82" y1="50" x2="56" y2="22" stroke="#5BB8F5" stroke-width="7" stroke-linecap="round"/>
+      <line x1="82" y1="50" x2="56" y2="78" stroke="#5BB8F5" stroke-width="7" stroke-linecap="round"/>
+      <path d="M 32 42 A 18 18 0 0 1 68 42" fill="none" stroke="#D4A017" stroke-width="2.5" stroke-linecap="round"/>
+      <polyline points="62,34 68,42 58,44" fill="none" stroke="#D4A017" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 68 58 A 18 18 0 0 1 32 58" fill="none" stroke="#D4A017" stroke-width="2.5" stroke-linecap="round"/>
+      <polyline points="38,66 32,58 42,56" fill="none" stroke="#D4A017" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="50" cy="50" r="4" fill="#D4A017"/>
+    </svg>
+    <div class="logo-text"><span class="k1">K</span>one<span class="k2">K</span>t</div>
+  </div>
+
+  <div class="qr-container">
+    <canvas id="qr" width="240" height="240"></canvas>
+  </div>
+
+  <div class="url">karlkelle1-ctrl.github.io/konekt</div>
+  <div class="tagline">Scannez pour accéder à l'application</div>
+  <div class="badge">🇨🇲 Cameroun</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// Remove old canvas and use QRCode library
+document.getElementById('qr').remove();
+new QRCode(document.querySelector('.qr-container'), {
+  text: 'https://karlkelle1-ctrl.github.io/konekt',
+  width: 240,
+  height: 240,
+  colorDark: '#071428',
+  colorLight: '#ffffff',
+  correctLevel: QRCode.CorrectLevel.H
+});
+</script>
+</body>
+</html>
