@@ -135,6 +135,25 @@ textarea{resize:none;}
 .chip-ok{background:rgba(26,138,74,.12);color:var(--ok);}
 .chip-err{background:rgba(204,34,34,.1);color:var(--err);}
 .chip-gold{background:rgba(212,160,23,.12);color:var(--gold);}
+
+#install-app-btn{
+  position:fixed;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:88px;
+  z-index:9998;
+  display:none;
+  border:none;
+  border-radius:999px;
+  padding:12px 18px;
+  background:linear-gradient(135deg,#1A8A4A,#2952CC);
+  color:#fff;
+  font-weight:800;
+  font-size:14px;
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
+}
+#install-app-btn.show{display:block;}
+
 </style>
 <link rel="icon" type="image/png" href="icon-192.png"/>
 <link rel="apple-touch-icon" href="icon-192.png"/>
@@ -159,25 +178,142 @@ textarea{resize:none;}
   </nav>
 </div>
 <div id="toast"></div>
+<button id="install-app-btn" onclick="installPWA()">⬇️ Installer KoneKt</button>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js">
+let deferredInstallPrompt = null;
+
+function updateInstallButton(){
+  const btn = document.getElementById('install-app-btn');
+  if(!btn) return;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  btn.classList.toggle('show', !!deferredInstallPrompt && !standalone);
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  updateInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
+  showToast(APP_LANG === 'en' ? 'KoneKt installed' : 'KoneKt installée');
+});
+
+async function installPWA(){
+  if(!deferredInstallPrompt){
+    showToast(APP_LANG === 'en'
+      ? 'Use your browser menu to install the app'
+      : "Utilise le menu du navigateur pour installer l'application", '#2952CC');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  updateInstallButton();
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => {
+      console.error('SW registration failed', err);
+    });
+  });
+}
+
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js">
+let deferredInstallPrompt = null;
+
+function updateInstallButton(){
+  const btn = document.getElementById('install-app-btn');
+  if(!btn) return;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  btn.classList.toggle('show', !!deferredInstallPrompt && !standalone);
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  updateInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
+  showToast(APP_LANG === 'en' ? 'KoneKt installed' : 'KoneKt installée');
+});
+
+async function installPWA(){
+  if(!deferredInstallPrompt){
+    showToast(APP_LANG === 'en'
+      ? 'Use your browser menu to install the app'
+      : "Utilise le menu du navigateur pour installer l'application", '#2952CC');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  updateInstallButton();
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => {
+      console.error('SW registration failed', err);
+    });
+  });
+}
+
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js">
+let deferredInstallPrompt = null;
+
+function updateInstallButton(){
+  const btn = document.getElementById('install-app-btn');
+  if(!btn) return;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  btn.classList.toggle('show', !!deferredInstallPrompt && !standalone);
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  updateInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
+  showToast(APP_LANG === 'en' ? 'KoneKt installed' : 'KoneKt installée');
+});
+
+async function installPWA(){
+  if(!deferredInstallPrompt){
+    showToast(APP_LANG === 'en'
+      ? 'Use your browser menu to install the app'
+      : "Utilise le menu du navigateur pour installer l'application", '#2952CC');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  updateInstallButton();
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => {
+      console.error('SW registration failed', err);
+    });
+  });
+}
+
+</script>
 <script>
 
-// FORCE CLEAR ALL CACHES
-try {
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.getRegistrations().then(function(regs){
-      regs.forEach(function(r){ r.unregister(); });
-    });
-  }
-  if('caches' in window){
-    caches.keys().then(function(keys){
-      keys.forEach(function(k){ caches.delete(k); });
-    });
-  }
-} catch(e){}
 
 // ══════════════════════════════════════════════
 //  FIREBASE CONFIG — konekt-788c3
@@ -2562,6 +2698,49 @@ auth.onAuthStateChanged(async function(user){
     }catch(e){}
   }
 });
+
+
+let deferredInstallPrompt = null;
+
+function updateInstallButton(){
+  const btn = document.getElementById('install-app-btn');
+  if(!btn) return;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  btn.classList.toggle('show', !!deferredInstallPrompt && !standalone);
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  updateInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
+  showToast(APP_LANG === 'en' ? 'KoneKt installed' : 'KoneKt installée');
+});
+
+async function installPWA(){
+  if(!deferredInstallPrompt){
+    showToast(APP_LANG === 'en'
+      ? 'Use your browser menu to install the app'
+      : "Utilise le menu du navigateur pour installer l'application", '#2952CC');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  updateInstallButton();
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => {
+      console.error('SW registration failed', err);
+    });
+  });
+}
 
 </script>
 </body>

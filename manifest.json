@@ -1,12 +1,25 @@
 {
-  "name": "KoneKt",
+  "name": "KoneKt Cameroun",
   "short_name": "KoneKt",
-  "start_url": ".",
+  "description": "Plateforme de mise en relation entre prestataires et clients au Cameroun.",
+  "start_url": "./index.html?v=pwa",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#071428",
-  "theme_color": "#1AB44A",
+  "theme_color": "#071428",
+  "lang": "fr",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
