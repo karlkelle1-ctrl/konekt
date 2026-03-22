@@ -696,7 +696,62 @@ const I18N = {
     search_placeholder:'Rechercher par activité, nom ou ville', near_me:'Autour de moi',
     clear:'Effacer', no_provider:'Aucun prestataire trouvé.',
     edit_profile:'Modifier mon profil', save:'Enregistrer', logout:'Se déconnecter',
-    sign_in:'Se connecter', my_profile:'Mon profil'
+    sign_in:'Se connecter', my_profile:'Mon profil',
+    skip:'Passer', next:'Suivant →', start:'Commencer 🚀',
+    cameroon_label:'Cameroun 🇨🇲',
+    platform_no1:'PLATEFORME N°1 AU CAMEROUN',
+    find_fast:'Trouvez le bon prestataire, vite.',
+    notif_soon:'Notifications bientôt disponibles',
+    on_quote:'Sur devis',
+    online_status:'● En ligne', offline_status:'○ Hors ligne',
+    about:'À propos',
+    identity_verified:'Identité vérifiée',
+    id_checked_by:"Pièce d'identité contrôlée par KoneKt",
+    no_description:'Aucune description.',
+    see_quote:'Voir / demander un devis',
+    no_activity:'Aucune activité publiée pour le moment.',
+    edit_review:'Modifier mon avis',
+    leave_review:'Laisser un avis',
+    login_review_toast:"Connecte-toi pour laisser un avis.",
+    sign_in_rate:'Se connecter pour noter',
+    no_comment:'Aucun commentaire.',
+    no_reviews_first:'Aucun avis pour le moment. Soyez le premier à noter ce prestataire.',
+    no_reviews:'Aucun avis pour le moment.',
+    send_message_btn:'Envoyer un message',
+    place_order:'Passer une commande',
+    no_conversation:'Aucune conversation',
+    write_message:'Écrire un message...',
+    today:"Aujourd'hui",
+    management_tab:'Gestion',
+    my_activities_tab:'Mes activités',
+    received_orders:'Commandes reçues',
+    pending_ongoing:'En attente / en cours',
+    published_activities:'Activités publiées',
+    status_label:'Statut',
+    quick_actions:'Actions rapides',
+    publish_activity:'Publier une activité',
+    view_orders:'Voir les commandes reçues',
+    view_messages:'Voir les messages',
+    my_pro_profile:'Mon profil professionnel',
+    name_label:'Nom',
+    job_label:'Métier',
+    gps_position:'Position GPS',
+    not_defined:'Non définie',
+    bio_label:'Bio',
+    no_bio:'Aucune bio renseignée.',
+    my_location:'Ma position',
+    switch_profile:'Changer de profil',
+    community:'Rejoins la communauté KoneKt 🇨🇲',
+    create_provider_btn:'Créer mon profil prestataire',
+    create_account_btn:'Créer mon compte',
+    already_account:'Déjà un compte ?',
+    sign_in_arrow:'Se connecter →',
+    later:'Plus tard',
+    provider_chip:'🔧 Prestataire',
+    visitor_chip:'👤 Visiteur / Client',
+    my_activities_services:'Mes activités / services',
+    publish_activities_text:'Publie tes activités, tarifs, commentaires et réalisations.',
+    no_activity_yet:'Aucune activité publiée pour le moment.'
   },
   en: {
     home:'Home', msgs:'Messages', cmds:'Orders', profile:'Profile',
@@ -709,7 +764,62 @@ const I18N = {
     search_placeholder:'Search by activity, name or city', near_me:'Near me',
     clear:'Clear', no_provider:'No provider found.',
     edit_profile:'Edit profile', save:'Save', logout:'Sign out',
-    sign_in:'Sign in', my_profile:'My profile'
+    sign_in:'Sign in', my_profile:'My profile',
+    skip:'Skip', next:'Next →', start:'Start 🚀',
+    cameroon_label:'Cameroon 🇨🇲',
+    platform_no1:'NO.1 PLATFORM IN CAMEROON',
+    find_fast:'Find the right provider, fast.',
+    notif_soon:'Notifications coming soon',
+    on_quote:'On quote',
+    online_status:'● Online', offline_status:'○ Offline',
+    about:'About',
+    identity_verified:'Identity verified',
+    id_checked_by:'ID checked by KoneKt',
+    no_description:'No description.',
+    see_quote:'View / request a quote',
+    no_activity:'No activity published yet.',
+    edit_review:'Edit my review',
+    leave_review:'Leave a review',
+    login_review_toast:'Sign in to leave a review.',
+    sign_in_rate:'Sign in to rate',
+    no_comment:'No comment.',
+    no_reviews_first:'No reviews yet. Be the first to rate this provider.',
+    no_reviews:'No reviews yet.',
+    send_message_btn:'Send a message',
+    place_order:'Place an order',
+    no_conversation:'No conversation',
+    write_message:'Write a message...',
+    today:'Today',
+    management_tab:'Management',
+    my_activities_tab:'My activities',
+    received_orders:'Received orders',
+    pending_ongoing:'Pending / ongoing',
+    published_activities:'Published activities',
+    status_label:'Status',
+    quick_actions:'Quick actions',
+    publish_activity:'Publish an activity',
+    view_orders:'View received orders',
+    view_messages:'View messages',
+    my_pro_profile:'My professional profile',
+    name_label:'Name',
+    job_label:'Profession',
+    gps_position:'GPS position',
+    not_defined:'Not set',
+    bio_label:'Bio',
+    no_bio:'No bio provided.',
+    my_location:'My location',
+    switch_profile:'Switch profile',
+    community:'Join the KoneKt community 🇨🇲',
+    create_provider_btn:'Create my provider profile',
+    create_account_btn:'Create my account',
+    already_account:'Already have an account?',
+    sign_in_arrow:'Sign in →',
+    later:'Later',
+    provider_chip:'🔧 Provider',
+    visitor_chip:'👤 Visitor / Client',
+    my_activities_services:'My activities / services',
+    publish_activities_text:'Publish your activities, prices, comments and work.',
+    no_activity_yet:'No activity published yet.'
   }
 };
 
@@ -873,8 +983,7 @@ const TEXT_PAIRS = [
   ['Administration','Administration'],
   ['Prestataire inscrit sur KoneKt.','Provider registered on KoneKt.'],
   ['Provider inscrit sur KoneKt.','Provider registered on KoneKt.'],
-  ['Sur devis','On quote'],
-  ['On quote','Sur devis']
+  ['Sur devis','On quote']
 ];
 
 function trText(value){
@@ -1098,17 +1207,17 @@ function render(){
 // ══════════════════════════════════════════════
 //  SPLASH
 // ══════════════════════════════════════════════
-const SLIDES=[
-  {emoji:"🔗",title:"Bienvenue sur KoneKt",sub:"La plateforme qui connecte prestataires et clients au Cameroun"},
-  {emoji:"🔧",title:"Trouvez n'importe quel service",sub:"Plombier, coiffeur, agriculteur… tous les prestataires en un clic"},
-  {emoji:"⭐",title:"Évaluez & faites confiance",sub:"Notes, avis et vérification d'identité pour des prestataires fiables et compétents"},
-];
+function getSlides(){return[
+  {emoji:"🔗",title:APP_LANG==='en'?'Welcome to KoneKt':'Bienvenue sur KoneKt',sub:APP_LANG==='en'?'The platform connecting providers and clients in Cameroon':'La plateforme qui connecte prestataires et clients au Cameroun'},
+  {emoji:"🔧",title:APP_LANG==='en'?'Find any service':'Trouvez n\'importe quel service',sub:APP_LANG==='en'?'Plumber, hairdresser, farmer… all providers in one tap':'Plombier, coiffeur, agriculteur… tous les prestataires en un clic'},
+  {emoji:"⭐",title:APP_LANG==='en'?'Rate & trust':'Évaluez & faites confiance',sub:APP_LANG==='en'?'Ratings, reviews and identity verification for reliable and skilled providers':'Notes, avis et vérification d\'identité pour des prestataires fiables et compétents'},
+];}
 let splashStep=0;
 
 function renderSplash(){
   setNav(false);
-  const sl=SLIDES[splashStep];
-  const dots=SLIDES.map((_,i)=>`<div style="width:${i===splashStep?28:7}px;height:7px;border-radius:4px;background:${i===splashStep?'var(--accent)':'var(--border2)'};transition:all .4s cubic-bezier(.22,1,.36,1)"></div>`).join('');
+  const sl=getSlides()[splashStep];
+  const dots=getSlides().map((_,i)=>`<div style="width:${i===splashStep?28:7}px;height:7px;border-radius:4px;background:${i===splashStep?'var(--accent)':'var(--border2)'};transition:all .4s cubic-bezier(.22,1,.36,1)"></div>`).join('');
   s(`<div class="wax-bg" style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:48px 28px 36px;overflow:hidden;position:relative;">
     <!-- Wax décoration -->
     <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--gold));opacity:.08;pointer-events:none"></div>
@@ -1131,16 +1240,16 @@ function renderSplash(){
     <div style="width:100%;animation:fadeUp .5s ease .15s both">
       <div style="display:flex;gap:6px;justify-content:center;margin-bottom:28px">${dots}</div>
       <div style="display:flex;gap:12px;align-items:center;justify-content:center">
-        ${splashStep<SLIDES.length-1
-          ? `<button class="btn-ghost" onclick="skipSplash()" style="color:var(--muted)">Passer</button>
-             <button class="btn btn-primary" onclick="nextSlide()" style="width:auto;padding:14px 32px;border-radius:50px">Suivant →</button>`
-          : `<button class="btn btn-primary" onclick="skipSplash()" style="border-radius:50px;font-size:16px">Commencer 🚀</button>`}
+        ${splashStep<getSlides().length-1
+          ? `<button class="btn-ghost" onclick="skipSplash()" style="color:var(--muted)">${t('skip')}</button>
+             <button class="btn btn-primary" onclick="nextSlide()" style="width:auto;padding:14px 32px;border-radius:50px">${t('next')}</button>`
+          : `<button class="btn btn-primary" onclick="skipSplash()" style="border-radius:50px;font-size:16px">${t('start')}</button>`}
       </div>
     </div>
   </div>`);
 }
 
-function nextSlide(){ splashStep=Math.min(splashStep+1,SLIDES.length-1); renderSplash(); }
+function nextSlide(){ splashStep=Math.min(splashStep+1,getSlides().length-1); renderSplash(); }
 function skipSplash(){ STATE.screen='welcome'; render(); }
 
 // ══════════════════════════════════════════════
@@ -1158,7 +1267,7 @@ function renderWelcome(){
           <svg width="44" height="44" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lgb" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1A8A4A"/><stop offset="100%" stop-color="#5BB8F5"/></linearGradient></defs><circle cx="50" cy="50" r="46" fill="#071428" stroke="url(#lgb)" stroke-width="3.5"/><line x1="18" y1="22" x2="18" y2="78" stroke="#1A8A4A" stroke-width="7" stroke-linecap="round"/><line x1="18" y1="50" x2="44" y2="22" stroke="#1A8A4A" stroke-width="7" stroke-linecap="round"/><line x1="18" y1="50" x2="44" y2="78" stroke="#1A8A4A" stroke-width="7" stroke-linecap="round"/><line x1="82" y1="22" x2="82" y2="78" stroke="#5BB8F5" stroke-width="7" stroke-linecap="round"/><line x1="82" y1="50" x2="56" y2="22" stroke="#5BB8F5" stroke-width="7" stroke-linecap="round"/><line x1="82" y1="50" x2="56" y2="78" stroke="#5BB8F5" stroke-width="7" stroke-linecap="round"/><path d="M 32 42 A 18 18 0 0 1 68 42" fill="none" stroke="#D4A017" stroke-width="2.5" stroke-linecap="round"/><polyline points="62,34 68,42 58,44" fill="none" stroke="#D4A017" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M 68 58 A 18 18 0 0 1 32 58" fill="none" stroke="#D4A017" stroke-width="2.5" stroke-linecap="round"/><polyline points="38,66 32,58 42,56" fill="none" stroke="#D4A017" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="50" r="4" fill="#D4A017"/></svg>
           <div style="text-align:left">
             <div style="font-size:22px;font-weight:800;letter-spacing:-1px;color:var(--text)"><span style="color:#1A8A4A">K</span>one<span style="color:#5BB8F5">K</span>t</div>
-            <div style="font-size:11px;color:var(--muted);font-weight:600">Cameroun 🇨🇲</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">${t('cameroon_label')}</div>
           </div>
         </div>
       </div>
@@ -1211,10 +1320,10 @@ function renderRegisterScreen(role){
       <button onclick="STATE.screen='welcome';render()" style="background:var(--sand);border:none;border-radius:12px;color:var(--text2);font-size:18px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin-bottom:28px;font-weight:700">←</button>
       <div style="margin-bottom:28px">
         <div style="display:inline-flex;align-items:center;gap:6px;background:${isPrest?'rgba(91,184,245,.1)':'rgba(26,138,122,.1)'};color:${isPrest?'var(--accent)':'var(--teal)'};padding:5px 12px;border-radius:50px;font-size:12px;font-weight:700;margin-bottom:12px">
-          ${isPrest?'🔧 Prestataire':'👤 Visiteur / Client'}
+          ${isPrest?t('provider_chip'):t('visitor_chip')}
         </div>
         <h2 style="font-size:26px;font-weight:800;color:var(--text);letter-spacing:-.5px;margin-bottom:6px">${t('register_title')}</h2>
-        <p style="color:var(--muted);font-size:14px">Rejoins la communauté KoneKt 🇨🇲</p>
+        <p style="color:var(--muted);font-size:14px">${t('community')}</p>
       </div>
 
       <div class="input-wrap"><label>${t('full_name')}</label><div class="input-field"><input type="text" id="r-nom" placeholder="Votre nom complet"/></div></div>
@@ -1245,7 +1354,7 @@ function renderRegisterScreen(role){
             📸 Photo pièce
           </button>
           <button onclick="setVerifMode('non')" id="vbtn-non" style="flex:1;padding:10px 8px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:12px;transition:all .2s">
-            Plus tard
+            ${t('later')}
           </button>
         </div>
 
@@ -1259,9 +1368,9 @@ function renderRegisterScreen(role){
       </div>`:``}
 
       <button class="btn btn-primary" id="register-btn" onclick="submitRegister('${role}')" style="margin-top:8px;border-radius:16px;font-size:15px;padding:16px">
-        ${isPrest?'Créer mon profil prestataire':'Créer mon compte'}
+        ${isPrest?t('create_provider_btn'):t('create_account_btn')}
       </button>
-      <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:20px">Déjà un compte ? <button class="btn-ghost" id="go-login-btn">Se connecter →</button></p>
+      <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:20px">${t('already_account')} <button class="btn-ghost" id="go-login-btn">${t('sign_in_arrow')}</button></p>
     </div>
   </div>`);
 }
@@ -1584,7 +1693,7 @@ function renderHome(){
               ${p._dist!=null?`<span>• ${p._dist.toFixed(1)} km</span>`:''}
             </div>
           </div>
-          <div style="padding:4px 10px;border-radius:50px;background:${p.dispo?'rgba(26,138,74,.1)':'rgba(204,34,34,.08)'};color:${p.dispo?'var(--ok)':'var(--err)'};font-size:10px;font-weight:800;flex-shrink:0;white-space:nowrap">${p.online?'● En ligne':'○ Hors ligne'}</div>
+          <div style="padding:4px 10px;border-radius:50px;background:${p.dispo?'rgba(26,138,74,.1)':'rgba(204,34,34,.08)'};color:${p.dispo?'var(--ok)':'var(--err)'};font-size:10px;font-weight:800;flex-shrink:0;white-space:nowrap">${p.online?t('online_status'):t('offline_status')}</div>
         </div>
         <p style="font-size:12px;color:var(--muted);margin-bottom:11px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.bio}</p>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:13px">
@@ -1592,7 +1701,7 @@ function renderHome(){
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">★</span><span style="font-weight:700;font-size:13px;color:var(--text)">${p.note}</span><span style="color:var(--muted);font-size:12px">(${p.avis})</span></div>
-          <span style="color:var(--accent);font-weight:800;font-size:14px">${p.tarif?fmt(p.tarif)+' /'+p.unite:'Sur devis'}</span>
+          <span style="color:var(--accent);font-weight:800;font-size:14px">${p.tarif?fmt(p.tarif)+' /'+p.unite:t('on_quote')}</span>
         </div>
       </div>
     </div>`).join('');
@@ -1605,7 +1714,7 @@ function renderHome(){
             <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.5px">📍 ${USER_GEO ? t('around_you') : t('all_cameroon')}</div>
             <div style="font-size:24px;font-weight:800;letter-spacing:-.5px">${t('home_title')}</div>
           </div>
-          <button onclick="showToast('Notifications bientôt disponibles')" style="width:48px;height:48px;border:none;border-radius:16px;background:var(--card);font-size:22px">🔔</button>
+          <button onclick="showToast(t('notif_soon'))" style="width:48px;height:48px;border:none;border-radius:16px;background:var(--card);font-size:22px">🔔</button>
         </div>
 
         <div class="input-field" style="margin-bottom:12px">
@@ -1627,14 +1736,14 @@ function renderHome(){
         <div style="background:linear-gradient(135deg,#1A8A4A,#2952CC);border-radius:26px;padding:22px 18px;position:relative;overflow:hidden;margin-bottom:16px">
           <div style="position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)"></div>
           <div style="position:absolute;right:40px;bottom:-26px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.06)"></div>
-          <div style="font-size:11px;font-weight:800;letter-spacing:1px;opacity:.85;margin-bottom:10px">PLATEFORME N°1 AU CAMEROUN</div>
-          <div style="font-size:18px;font-weight:800;line-height:1.25;max-width:220px;margin-bottom:14px">Trouvez le bon prestataire, vite.</div>
-          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:50px;font-weight:700;font-size:13px">🔗 ${filtered.length} prestataires actifs</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:1px;opacity:.85;margin-bottom:10px">${t('platform_no1')}</div>
+          <div style="font-size:18px;font-weight:800;line-height:1.25;max-width:220px;margin-bottom:14px">${t('find_fast')}</div>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:50px;font-weight:700;font-size:13px">🔗 ${filtered.length} ${APP_LANG==='en'?'active providers':'prestataires actifs'}</div>
         </div>
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-size:16px;font-weight:800">${filtered.length} prestataires</div>
-          <div style="font-size:12px;color:var(--muted)">${filtered.filter(p=>p.online).length} en ligne</div>
+          <div style="font-size:16px;font-weight:800">${filtered.length} ${APP_LANG==='en'?'providers':'prestataires'}</div>
+          <div style="font-size:12px;color:var(--muted)">${filtered.filter(p=>p.online).length} ${APP_LANG==='en'?'online':'en ligne'}</div>
         </div>
 
         ${cards || `<div class="card" style="text-align:center;color:var(--muted)">${t('no_provider')}</div>`}
@@ -1730,13 +1839,13 @@ function renderPrestDetail(){
   let tabContent='';
   if(prestTab==='infos') tabContent=`
     <div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px">
-      <div class="stitle">À propos</div>
-      <p style="font-size:13px;line-height:1.7">${p.bio} Professionnel sérieux et ponctuel, disponible pour toute intervention.</p>
+      <div class="stitle">${t('about')}</div>
+      <p style="font-size:13px;line-height:1.7">${p.bio}</p>
     </div>
     <div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px">
       ${p.tags.map((t,i)=>`<div style="display:flex;align-items:center;gap:9px;padding:9px 0;${i<p.tags.length-1?'border-bottom:1px solid var(--border)':''}"><div style="width:7px;height:7px;border-radius:50%;background:${p.couleur};flex-shrink:0"></div><span style="font-size:13px">${t}</span></div>`).join('')}
     </div>
-    ${p.verifie?`<div style="background:#22C55E11;border:1px solid #22C55E33;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:center"><span style="font-size:24px">🛡️</span><div><div style="font-weight:700;color:var(--ok);font-size:13px">Identité vérifiée</div><div style="color:var(--muted);font-size:12px">Pièce d'identité contrôlée par KoneKt</div></div></div>`:''}`;
+    ${p.verifie?`<div style="background:#22C55E11;border:1px solid #22C55E33;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:center"><span style="font-size:24px">🛡️</span><div><div style="font-weight:700;color:var(--ok);font-size:13px">${t('identity_verified')}</div><div style="color:var(--muted);font-size:12px">${t('id_checked_by')}</div></div></div>`:''}`;
   else if(prestTab==='activites'){
     const items = PRODUCTS.filter(function(it){ return String(it.ownerUid)===String(p.id); });
     tabContent = items.length ? items.map(function(it){
@@ -1744,21 +1853,21 @@ function renderPrestDetail(){
         ${it.photoBase64?`<img src="${it.photoBase64}" style="width:100%;height:170px;object-fit:cover;border-radius:14px;margin-bottom:12px;border:1px solid var(--border)"/>`:''}
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px">
           <div><div style="font-weight:800;font-size:14px">${it.title}</div>${it.comment?`<div style="color:var(--muted);font-size:12px;margin-top:4px">${it.comment}</div>`:''}</div>
-          <div style="font-weight:800;color:var(--accent);font-size:13px">${it.price?fmt(it.price):'Sur devis'}</div>
+          <div style="font-weight:800;color:var(--accent);font-size:13px">${it.price?fmt(it.price):t('on_quote')}</div>
         </div>
-        <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-bottom:12px">${it.description||'Aucune description.'}</div>
-        <button onclick="event.stopPropagation(); openProductPublic('${it.id}')" class="btn btn-outline" style="padding:11px 14px">Voir / demander un devis</button>
+        <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-bottom:12px">${it.description||t('no_description')}</div>
+        <button onclick="event.stopPropagation(); openProductPublic('${it.id}')" class="btn btn-outline" style="padding:11px 14px">${t('see_quote')}</button>
       </div>`;
-    }).join('') : `<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:18px;padding:18px;text-align:center;color:var(--muted)">Aucune activité publiée pour le moment.</div>`;
+    }).join('') : `<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:18px;padding:18px;text-align:center;color:var(--muted)">${t('no_activity')}</div>`;
   }
   else if(prestTab==='avis'){
     const reviews = getReviewsForPrest(p.id);
     const canReview = canCurrentUserReview(p.id);
     const existingMine = canReview ? reviews.find(function(r){ return String(r.authorUid)===String(STATE.user.uid); }) : null;
     const cta = canReview
-      ? `<button id="leave-review-btn" class="btn btn-primary" onclick="openReviewModal('${p.id}')" style="margin-bottom:12px">${existingMine ? 'Modifier mon avis' : 'Laisser un avis'}</button>`
+      ? `<button id="leave-review-btn" class="btn btn-primary" onclick="openReviewModal('${p.id}')" style="margin-bottom:12px">${existingMine ? t('edit_review') : t('leave_review')}</button>`
       : (!STATE.user || !STATE.user.uid
-          ? `<button class="btn btn-outline" onclick="showToast('Connecte-toi pour laisser un avis.','var(--warn)')" style="margin-bottom:12px">Se connecter pour noter</button>`
+          ? `<button class="btn btn-outline" onclick="showToast(t('login_review_toast'),'var(--warn)')" style="margin-bottom:12px">${t('sign_in_rate')}</button>`
           : '');
     tabContent = cta + (reviews.length ? reviews.map(function(a){
       return `<div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:10px">
@@ -1766,13 +1875,13 @@ function renderPrestDetail(){
           <span style="font-weight:700;font-size:13px">${a.authorName}</span>
           <span class="stars">${stars(a.note)}</span>
         </div>
-        <p style="color:var(--muted);font-size:12px;line-height:1.5">${a.comment || 'Aucun commentaire.'}</p>
+        <p style="color:var(--muted);font-size:12px;line-height:1.5">${a.comment || t('no_comment')}</p>
       </div>`;
-    }).join('') : `<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:18px;padding:18px;text-align:center;color:var(--muted)">${canReview ? 'Aucun avis pour le moment. Soyez le premier à noter ce prestataire.' : 'Aucun avis pour le moment.'}</div>`);
+    }).join('') : `<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:18px;padding:18px;text-align:center;color:var(--muted)">${canReview ? t('no_reviews_first') : t('no_reviews')}</div>`);
   }
   else tabContent=`
-    <button class="btn btn-primary" onclick="goTabMsg('${p.id}')" style="margin-bottom:10px">💬 Envoyer un message</button>
-    <button class="btn btn-outline" onclick="goTabCmd('${p.id}')" style="margin-bottom:12px">📦 Passer une commande</button>
+    <button class="btn btn-primary" onclick="goTabMsg('${p.id}')" style="margin-bottom:10px">💬 ${t('send_message_btn')}</button>
+    <button class="btn btn-outline" onclick="goTabCmd('${p.id}')" style="margin-bottom:12px">📦 ${t('place_order')}</button>
     <div style="display:flex;gap:10px"></div>`;
   s(`
     <div style="padding-bottom:80px;animation:fadeUp .3s ease">
@@ -1878,10 +1987,10 @@ function openProductPublic(productId){
           <div style="font-size:20px;font-weight:800">${item.title}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:4px">${(p&&p.nom)||''} ${(p&&p.metier)?('• '+p.metier):''}</div>
         </div>
-        <div style="font-size:16px;font-weight:800;color:var(--accent)">${item.price?fmt(item.price):'Sur devis'}</div>
+        <div style="font-size:16px;font-weight:800;color:var(--accent)">${item.price?fmt(item.price):t('on_quote')}</div>
       </div>
       ${item.comment?`<div style="font-size:13px;color:var(--gold);font-weight:700;margin-bottom:8px">${item.comment}</div>`:''}
-      <div style="font-size:14px;line-height:1.7;color:var(--text2);margin-bottom:16px">${item.description||'Aucune description.'}</div>
+      <div style="font-size:14px;line-height:1.7;color:var(--text2);margin-bottom:16px">${item.description||t('no_description')}</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-outline" onclick="addProductToCart('${item.id}')" style="flex:1;min-width:160px">🛒 Ajouter au panier</button>
         <button class="btn btn-primary" onclick="requestQuoteForProduct('${item.id}')" style="flex:1;min-width:160px">📦 Demander un devis</button>
@@ -1937,7 +2046,7 @@ function recalcOrderTotal(){
     const line = price * qty;
     total += line;
     const out = document.getElementById('cart-line-total-' + inp.getAttribute('data-id'));
-    if(out) out.textContent = line ? fmt(line) : 'Sur devis';
+    if(out) out.textContent = line ? fmt(line) : t('on_quote');
   });
   const grand = document.getElementById('ord-total');
   if(grand) grand.value = total || Number(grand.value || 0);
@@ -1970,7 +2079,7 @@ function renderMsgList(){
     <div style="padding:18px 16px 14px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)">
       <h2 style="font-size:20px;font-weight:800">Messages ${totalUnread>0?`<span style="color:var(--accent)">(${totalUnread})</span>`:''}</h2>
     </div>
-    ${CONVS.length===0?`<div style="text-align:center;padding:60px 0"><div style="font-size:56px;margin-bottom:12px">💬</div><div style="font-weight:700">Aucune conversation</div></div>`:items}
+    ${CONVS.length===0?`<div style="text-align:center;padding:60px 0"><div style="font-size:56px;margin-bottom:12px">💬</div><div style="font-weight:700">${t('no_conversation')}</div></div>`:items}
   </div>`);
 }
 
@@ -1986,7 +2095,7 @@ function openConv(id){
     if(!cv) return;
     cv.msgs = snap.docs.map(function(doc){
       const d = doc.data() || {};
-      return {id:doc.id, from:d.from === (STATE.user||{}).uid ? 'me' : 'them', text:safeText(d.text,''), time:safeText(d.time,''), date:"Aujourd'hui"};
+      return {id:doc.id, from:d.from === (STATE.user||{}).uid ? 'me' : 'them', text:safeText(d.text,''), time:safeText(d.time,''), date:t('today')};
     });
     if(selConvId===String(id) && STATE.tab==='msgs'){ renderChat(); }
   }, function(err){ console.error('CHAT snapshot error', err); renderChat(); });
@@ -2011,7 +2120,7 @@ function renderChat(){
     <div style="padding:12px 14px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;flex-shrink:0;position:sticky;top:0;z-index:5">
       <button onclick="selConvId=null;renderMsgList()" style="background:var(--card);border:none;border-radius:10px;color:var(--text);width:36px;height:36px;font-size:17px;display:flex;align-items:center;justify-content:center">←</button>
       <div class="avatar" style="width:40px;height:40px;background:${p.couleur}22;border:1.5px solid ${p.couleur}55;font-size:20px">${p.emoji}</div>
-      <div style="flex:1"><div style="font-weight:800;font-size:14px">${p.nom}</div><div id="chat-status" style="font-size:11px;color:${p.couleur};font-weight:600">${p.dispo?'En ligne':'Hors ligne'}</div></div>
+      <div style="flex:1"><div style="font-weight:800;font-size:14px">${p.nom}</div><div id="chat-status" style="font-size:11px;color:${p.couleur};font-weight:600">${p.dispo?APP_LANG==='en'?'Online':'En ligne':APP_LANG==='en'?'Offline':'Hors ligne'}</div></div>
       <button style="width:34px;height:34px;border-radius:10px;background:#25D36618;border:1px solid #25D36633;font-size:17px">💬</button>
       <button style="width:34px;height:34px;border-radius:10px;background:var(--card);border:1px solid var(--border);font-size:17px">📞</button>
     </div>
@@ -2028,7 +2137,7 @@ function renderChat(){
     </div>
     <div style="padding:10px 14px 18px;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:flex-end;gap:8px;flex-shrink:0">
       <div style="flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:9px 13px">
-        <textarea id="chat-inp" placeholder="Écrire un message..." rows="1" onkeydown="chatEnter(event)" style="width:100%;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;max-height:80px;overflow-y:auto"></textarea>
+        <textarea id="chat-inp" placeholder="${t('write_message')}" rows="1" onkeydown="chatEnter(event)" style="width:100%;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;max-height:80px;overflow-y:auto"></textarea>
       </div>
       <button id="send-btn" onclick="sendMsg()" style="width:42px;height:42px;border-radius:13px;background:var(--card);border:1.5px solid var(--border);font-size:18px;display:flex;align-items:center;justify-content:center">➤</button>
     </div>
@@ -2068,14 +2177,14 @@ function sendMsg(){
     var cv = CONVS.find(function(c){ return c.id == selConvId; });
     if(cv){
       cv.msgs = cv.msgs || [];
-      cv.msgs.push({id:Date.now(),from:'me',text:txt,time:nowTxt,date:"Aujourd'hui"});
+      cv.msgs.push({id:Date.now(),from:'me',text:txt,time:nowTxt,date:t('today')});
     }
     renderChat();
   }).catch(function(e){
     var cv = CONVS.find(function(c){ return c.id == selConvId; });
     if(cv){
       cv.msgs = cv.msgs || [];
-      cv.msgs.push({id:Date.now(),from:'me',text:txt,time:nowTxt,date:"Aujourd'hui"});
+      cv.msgs.push({id:Date.now(),from:'me',text:txt,time:nowTxt,date:t('today')});
     }
     renderChat();
   });
@@ -2096,7 +2205,7 @@ function openNewOrder(){
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">'
     + '<button id="ord-back" style="background:var(--card);border:none;border-radius:12px;color:var(--text);font-size:18px;width:40px;height:40px;cursor:pointer">←</button>'
     + '<h2 style="font-size:18px;font-weight:800;color:var(--text)">Nouvelle commande</h2></div>'
-    + '<div class="card" style="margin-bottom:14px">' + (p ? ('<div style="font-weight:800;font-size:15px;margin-bottom:6px">' + p.nom + '</div><div style="color:var(--muted);font-size:12px">' + (p.metier||'Prestataire') + ' • ' + (p.ville||'') + '</div>') : '<div style="color:var(--muted)">Choisis d\'abord un prestataire depuis son profil.</div>') + (cartItems.length ? ('<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">Panier (' + cartItems.length + ')</div>' + cartItems.map(function(it){ return '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--text2);padding-bottom:8px"><span style="font-weight:700;color:var(--text)">' + it.title + '</span><span>' + (it.price?fmt(it.price):'Sur devis') + '</span></div><div style="display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center"><div class="input-field" style="margin:0"><input class="cart-qty-input" data-id="' + it.productId + '" data-price="' + (Number(it.price||0)||0) + '" type="number" min="1" value="' + (Number(it.qty||1)||1) + '" oninput="recalcOrderTotal()"/></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Quantité</span><span id="cart-line-total-' + it.productId + '">' + ((Number(it.price||0)||0) ? fmt((Number(it.price||0)||0) * (Number(it.qty||1)||1)) : 'Sur devis') + '</span></div></div></div>'; }).join('') + '</div>') : '') + '</div>'
+    + '<div class="card" style="margin-bottom:14px">' + (p ? ('<div style="font-weight:800;font-size:15px;margin-bottom:6px">' + p.nom + '</div><div style="color:var(--muted);font-size:12px">' + (p.metier||'Prestataire') + ' • ' + (p.ville||'') + '</div>') : '<div style="color:var(--muted)">Choisis d\'abord un prestataire depuis son profil.</div>') + (cartItems.length ? ('<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">Panier (' + cartItems.length + ')</div>' + cartItems.map(function(it){ return '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--text2);padding-bottom:8px"><span style="font-weight:700;color:var(--text)">' + it.title + '</span><span>' + (it.price?fmt(it.price):t('on_quote')) + '</span></div><div style="display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center"><div class="input-field" style="margin:0"><input class="cart-qty-input" data-id="' + it.productId + '" data-price="' + (Number(it.price||0)||0) + '" type="number" min="1" value="' + (Number(it.qty||1)||1) + '" oninput="recalcOrderTotal()"/></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Quantité</span><span id="cart-line-total-' + it.productId + '">' + ((Number(it.price||0)||0) ? fmt((Number(it.price||0)||0) * (Number(it.qty||1)||1)) : t('on_quote')) + '</span></div></div></div>'; }).join('') + '</div>') : '') + '</div>'
     + '<div class="input-wrap"><label>Service demandé</label><div class="input-field"><input id="ord-service" type="text" value="' + (newOrderForm.service|| (cartItems.length ? cartItems.map(function(it){ return it.title; }).join(', ') : '')) + '" placeholder="Ex: Réparation prise électrique"/></div></div>'
     + '<div class="input-wrap"><label>Adresse</label><div class="input-field"><input id="ord-addr" type="text" value="' + (newOrderForm.adresse||'') + '" placeholder="Quartier, rue, repère"/></div></div>' + (cartItems.length ? '<div style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:10px">Commande multiple pour ' + cartItems.length + ' article(s). Ajuste la quantité pour chaque article.</div>' : '')
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
@@ -2451,47 +2560,47 @@ function renderProfile(){
   if(u.role==='prestataire'){
     const myItems = PRODUCTS.filter(function(it){ return String(it.ownerUid)===String(u.uid); });
     const tabs = [
-      {id:'gestion', label: APP_LANG==='en' ? 'Management' : 'Gestion'},
+      {id:'gestion', label: t('management_tab')},
       {id:'profil', label: t('my_profile')},
-      {id:'activites', label: APP_LANG==='en' ? 'My activities' : 'Mes activités'}
+      {id:'activites', label: t('my_activities_tab')}
     ];
     let content = '';
     if(prestMgmtTab==='gestion'){
       const pending = CMDS.filter(function(c){ return ['en_attente','confirme','en_cours'].includes(c.statut); }).length;
       content = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-        <div class="card"><div style="font-size:12px;color:var(--muted)">Commandes reçues</div><div style="font-size:24px;font-weight:800;margin-top:6px">${CMDS.length}</div></div>
-        <div class="card"><div style="font-size:12px;color:var(--muted)">En attente / en cours</div><div style="font-size:24px;font-weight:800;margin-top:6px">${pending}</div></div>
-        <div class="card"><div style="font-size:12px;color:var(--muted)">Activités publiées</div><div style="font-size:24px;font-weight:800;margin-top:6px">${myItems.length}</div></div>
-        <div class="card"><div style="font-size:12px;color:var(--muted)">Statut</div><div style="font-size:20px;font-weight:800;margin-top:6px;color:${u.online?'var(--ok)':'var(--muted)'}">${u.online?'En ligne':'Hors ligne'}</div></div>
+        <div class="card"><div style="font-size:12px;color:var(--muted)">${t('received_orders')}</div><div style="font-size:24px;font-weight:800;margin-top:6px">${CMDS.length}</div></div>
+        <div class="card"><div style="font-size:12px;color:var(--muted)">${t('pending_ongoing')}</div><div style="font-size:24px;font-weight:800;margin-top:6px">${pending}</div></div>
+        <div class="card"><div style="font-size:12px;color:var(--muted)">${t('published_activities')}</div><div style="font-size:24px;font-weight:800;margin-top:6px">${myItems.length}</div></div>
+        <div class="card"><div style="font-size:12px;color:var(--muted)">${t('status_label')}</div><div style="font-size:20px;font-weight:800;margin-top:6px;color:${u.online?'var(--ok)':'var(--muted)'}">${u.online?APP_LANG==='en'?'Online':'En ligne':APP_LANG==='en'?'Offline':'Hors ligne'}</div></div>
       </div>
       <div class="card">
-        <div class="stitle">Actions rapides</div>
-        <button class="btn btn-primary" onclick="prestMgmtTab='activites'; renderProfile()" style="margin-bottom:10px">➕ Publier une activité</button>
-        <button class="btn btn-outline" onclick="goTab('cmds')" style="margin-bottom:10px">📦 Voir les commandes reçues</button>
-        <button class="btn btn-outline" onclick="goTab('msgs')">💬 Voir les messages</button>
+        <div class="stitle">${t('quick_actions')}</div>
+        <button class="btn btn-primary" onclick="prestMgmtTab='activites'; renderProfile()" style="margin-bottom:10px">➕ ${t('publish_activity')}</button>
+        <button class="btn btn-outline" onclick="goTab('cmds')" style="margin-bottom:10px">📦 ${t('view_orders')}</button>
+        <button class="btn btn-outline" onclick="goTab('msgs')">💬 ${t('view_messages')}</button>
       </div>`;
     } else if(prestMgmtTab==='profil'){
       content = `<div class="card" style="margin-bottom:16px">
-        <div class="stitle">Mon profil professionnel</div>
+        <div class="stitle">${t('my_pro_profile')}</div>
         <div style="display:grid;gap:12px">
-          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">Nom</div><div style="margin-top:4px">${u.nom||''}</div></div>
-          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">Métier</div><div style="margin-top:4px">${u.metier||''}</div></div>
-          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">Ville</div><div style="margin-top:4px">${u.ville||''}</div></div>
-          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">Téléphone</div><div style="margin-top:4px">${u.tel||''}</div></div>
-          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">Position GPS</div><div style="margin-top:4px;color:var(--text2)">${(typeof u.lat==='number' && typeof u.lng==='number') ? (u.lat.toFixed(5)+', '+u.lng.toFixed(5)) : 'Non définie'}</div></div>
-          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">Bio</div><div style="margin-top:4px;color:var(--text2)">${u.bio||'Aucune bio renseignée.'}</div></div>
+          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">${t('name_label')}</div><div style="margin-top:4px">${u.nom||''}</div></div>
+          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">${t('job_label')}</div><div style="margin-top:4px">${u.metier||''}</div></div>
+          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">${t('city')}</div><div style="margin-top:4px">${u.ville||''}</div></div>
+          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">${t('phone')}</div><div style="margin-top:4px">${u.tel||''}</div></div>
+          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">${t('gps_position')}</div><div style="margin-top:4px;color:var(--text2)">${(typeof u.lat==='number' && typeof u.lng==='number') ? (u.lat.toFixed(5)+', '+u.lng.toFixed(5)) : t('not_defined')}</div></div>
+          <div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">${t('bio_label')}</div><div style="margin-top:4px;color:var(--text2)">${u.bio||t('no_bio')}</div></div>
         </div>
         <div style="display:flex;gap:10px;margin-top:16px">
           <button class="btn btn-primary" onclick="editProfile()">✏️ ${t('edit_profile')}</button>
-          <button class="btn btn-outline" onclick="setPrestGeoFromDevice()">📍 Ma position</button>
+          <button class="btn btn-outline" onclick="setPrestGeoFromDevice()">📍 ${t('my_location')}</button>
         </div>
       </div>`;
     } else {
       content = `<div class="card" style="margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <div>
-            <div class="stitle" style="margin-bottom:4px">Mes activités / services</div>
-            <div style="color:var(--muted);font-size:12px">Publie tes activités, tarifs, commentaires et réalisations.</div>
+            <div class="stitle" style="margin-bottom:4px">${t('my_activities_services')}</div>
+            <div style="color:var(--muted);font-size:12px">${t('publish_activities_text')}</div>
           </div>
           <button class="btn-ghost" onclick="openProductModal()">+ Ajouter</button>
         </div>
@@ -2503,15 +2612,15 @@ function renderProfile(){
                 <div style="font-weight:800;font-size:14px">${it.title}</div>
                 ${it.comment?`<div style="font-size:12px;color:var(--muted);margin-top:4px">${it.comment}</div>`:''}
               </div>
-              <div style="font-weight:800;color:var(--accent)">${it.price?fmt(it.price):'Sur devis'}</div>
+              <div style="font-weight:800;color:var(--accent)">${it.price?fmt(it.price):t('on_quote')}</div>
             </div>
-            <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-top:8px">${it.description||'Aucune description.'}</div>
+            <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-top:8px">${it.description||t('no_description')}</div>
             <div style="display:flex;gap:10px;margin-top:12px">
               <button class="btn btn-outline" onclick="openProductModal('${it.id}')" style="padding:10px 14px">Modifier</button>
               <button class="btn btn-danger" onclick="deleteProduct('${it.id}')" style="padding:10px 14px">Supprimer</button>
             </div>
           </div>`;
-        }).join('') : `<div style="text-align:center;padding:24px 10px;color:var(--muted)">Aucune activité publiée pour le moment.</div>`}
+        }).join('') : `<div style="text-align:center;padding:24px 10px;color:var(--muted)">${t('no_activity_yet')}</div>`}
       </div>`;
     }
     s(`<div style="padding:22px 16px 80px;animation:fadeUp .4s ease">${langSwitchHTML()}${verificationBannerHTML()}
@@ -2520,14 +2629,14 @@ function renderProfile(){
         <div style="flex:1">
           <div style="font-size:22px;font-weight:800">${u.nom||'Mon activité'}</div>
           <div style="color:var(--muted);font-size:13px">${u.metier||'Prestataire'} • ${u.ville||'Cameroun'}</div>
-          <div style="margin-top:6px"><span class="chip ${u.online?'chip-ok':'chip-gold'}">${u.online?'● En ligne':'○ Hors ligne'}</span></div>
+          <div style="margin-top:6px"><span class="chip ${u.online?'chip-ok':'chip-gold'}">${u.online?t('online_status'):t('offline_status')}</span></div>
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:16px">
         ${tabs.map(function(t){ return `<button onclick="prestMgmtTab='${t.id}'; renderProfile()" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid ${prestMgmtTab===t.id?'var(--accent)':'var(--border)'};background:${prestMgmtTab===t.id?'rgba(91,184,245,.12)':'transparent'};color:${prestMgmtTab===t.id?'var(--accent)':'var(--muted)'};font-weight:700;font-size:12px">${t.label}</button>`; }).join('')}
       </div>
       ${content}
-      ${(u.roles && u.roles.length>1) ? `<button class="btn btn-outline" onclick="showRoleChooser(STATE.user.roles)" style="margin-bottom:10px">🔄 Changer de profil</button>` : ``}
+      ${(u.roles && u.roles.length>1) ? `<button class="btn btn-outline" onclick="showRoleChooser(STATE.user.roles)" style="margin-bottom:10px">🔄 ${t('switch_profile')}</button>` : ``}
       <button class="btn btn-outline" onclick="logout()">${t('logout')}</button>
     </div>`);
     return;
@@ -2542,7 +2651,7 @@ function renderProfile(){
     <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px">
       ${[{i:'👤',l:'Modifier mon profil',fn:'editProfile()'},{i:'🔔',l:'Notifications',fn:'showToast(\'Notifications activées ✓\')'},{i:'🌐',l:APP_LANG==='en'?'Language':'Langue',fn:'showLanguageModal()'},{i:'🔒',l:'Sécurité & confidentialité',fn:'showSecurityModal()'},{i:'❓',l:'Aide & support',fn:'showToast(\'Support : konekt.cm@gmail.com\')'}].map((item,j,arr)=>`<div onclick="${item.fn}" style="display:flex;align-items:center;gap:14px;padding:14px 16px;${j<arr.length-1?'border-bottom:1px solid var(--border)':''}cursor:pointer" onmouseenter="this.style.background='var(--surface)'" onmouseleave="this.style.background=''"><span style="font-size:20px">${item.i}</span><span style="font-size:14px;font-weight:600;flex:1">${item.l}</span><span style="color:var(--muted)">›</span></div>`).join('')}
     </div>
-    ${(u.roles && u.roles.length>1) ? `<button class="btn btn-outline" onclick="showRoleChooser(STATE.user.roles)" style="margin-bottom:10px">🔄 Changer de profil</button>` : ``}
+    ${(u.roles && u.roles.length>1) ? `<button class="btn btn-outline" onclick="showRoleChooser(STATE.user.roles)" style="margin-bottom:10px">🔄 ${t('switch_profile')}</button>` : ``}
     <button class="btn btn-outline" onclick="logout()">${t('logout')}</button>
   </div>`);
 }
