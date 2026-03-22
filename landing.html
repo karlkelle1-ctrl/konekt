@@ -164,7 +164,23 @@
     .nav-right { display: flex; align-items: center; gap: .75rem; }
     .nav-cta   { font-size: .83rem; padding: .55rem 1.35rem; }
 
-    @media (max-width: 700px) { .nav-links { display: none; } }
+    @media (max-width: 700px) {
+      .nav-links { display: none; }
+      /* Logo reste toujours visible même sur 360px */
+      .logo-wrap { gap: .45rem; }
+      .logo-wrap svg { width: 34px; height: 34px; flex-shrink: 0; }
+      .logo-name { font-size: 1.1rem; }
+    }
+
+    /* Logo hero — visible uniquement sur mobile au-dessus du titre */
+    .hero-logo-mobile {
+      display: none;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 820px) {
+      .hero-logo-mobile { display: flex; }
+    }
 
     /* ── Hero ──────────────────────────────────────────────────── */
     #hero {
@@ -968,6 +984,41 @@
     <!-- Left -->
     <div class="hero-left">
 
+      <!-- Logo affiché dans le hero sur mobile uniquement -->
+      <div class="hero-logo-mobile">
+        <a href="#" class="logo-wrap" aria-label="KoneKt">
+          <svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="heroMobGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1A8A4A"/>
+                <stop offset="100%" stop-color="#5BB8F5"/>
+              </linearGradient>
+            </defs>
+            <circle cx="22" cy="22" r="21" fill="#071428"/>
+            <circle cx="22" cy="22" r="20" fill="none" stroke="url(#heroMobGrad)" stroke-width="2.5"/>
+            <g stroke="#1A8A4A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+              <line x1="9" y1="13" x2="9" y2="31"/>
+              <line x1="9" y1="22" x2="18" y2="13"/>
+              <line x1="9" y1="22" x2="18" y2="31"/>
+            </g>
+            <g stroke="#D4A017" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+              <line x1="20" y1="19.5" x2="24" y2="19.5"/>
+              <polyline points="22.5,17.5 24,19.5 22.5,21.5"/>
+              <line x1="24" y1="24.5" x2="20" y2="24.5"/>
+              <polyline points="21.5,22.5 20,24.5 21.5,26.5"/>
+            </g>
+            <g stroke="#5BB8F5" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+              <line x1="35" y1="13" x2="35" y2="31"/>
+              <line x1="35" y1="22" x2="26" y2="13"/>
+              <line x1="35" y1="22" x2="26" y2="31"/>
+            </g>
+          </svg>
+          <span class="logo-name" style="font-size:1.35rem;">
+            <span class="k1">K</span><span class="one">one</span><span class="k2">K</span><span class="t">t</span>
+          </span>
+        </a>
+      </div>
+
       <div class="hero-eyebrow">
         <span class="live-dot"></span>
         Disponible maintenant au Cameroun 🇨🇲
@@ -995,9 +1046,9 @@
 
       <div class="hero-trust">
         <div class="trust-avatars">
-          <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=64&h=64&auto=format&fit=crop&crop=face" alt="utilisateur" loading="lazy"/>
-          <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=64&h=64&auto=format&fit=crop&crop=face" alt="utilisateur" loading="lazy"/>
-          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&auto=format&fit=crop&crop=face" alt="utilisateur" loading="lazy"/>
+          <img src="https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=64&h=64&auto=format&fit=crop&crop=face" alt="utilisateur" loading="lazy"/>
+          <img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=64&h=64&auto=format&fit=crop&crop=face" alt="utilisateur" loading="lazy"/>
+          <img src="https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?w=64&h=64&auto=format&fit=crop&crop=face" alt="utilisateur" loading="lazy"/>
         </div>
         <div>
           <div class="trust-stars">★★★★★</div>
@@ -1013,7 +1064,7 @@
         <img
           class="hero-img"
           src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop"
-          alt="Personne utilisant KoneKt sur son téléphone"
+          alt="Africains utilisant KoneKt sur leur téléphone"
           loading="eager"
         />
 
@@ -1115,8 +1166,8 @@
       <div class="showcase-img-wrap anim fade-right">
         <img
           class="showcase-img"
-          src="https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=600&auto=format&fit=crop"
-          alt="Électricien professionnel au travail"
+          src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&auto=format&fit=crop"
+          alt="Prestataire professionnel africain au travail"
           loading="lazy"
         />
         <div class="showcase-badge">✅ Profil vérifié</div>
@@ -1149,7 +1200,7 @@
         <img
           class="showcase-img"
           src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&auto=format&fit=crop"
-          alt="Cliente satisfaite utilisant KoneKt"
+          alt="Cliente africaine satisfaite utilisant KoneKt"
           loading="lazy"
         />
         <div class="showcase-badge" style="background:linear-gradient(135deg,var(--bleu),#93c5fd);color:var(--nuit);">
@@ -1270,7 +1321,7 @@
         <div class="temo-author">
           <img
             class="temo-avatar"
-            src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=88&h=88&auto=format&fit=crop&crop=face"
+            src="https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=88&h=88&auto=format&fit=crop&crop=face"
             alt="Jean-Pierre Mbarga"
             loading="lazy"
           />
@@ -1290,7 +1341,7 @@
         <div class="temo-author">
           <img
             class="temo-avatar"
-            src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=88&h=88&auto=format&fit=crop&crop=face"
+            src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=88&h=88&auto=format&fit=crop&crop=face"
             alt="Fatima Nkolo"
             loading="lazy"
           />
@@ -1310,7 +1361,7 @@
         <div class="temo-author">
           <img
             class="temo-avatar"
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=88&h=88&auto=format&fit=crop&crop=face"
+            src="https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?w=88&h=88&auto=format&fit=crop&crop=face"
             alt="Emmanuel Biya-Fouda"
             loading="lazy"
           />
