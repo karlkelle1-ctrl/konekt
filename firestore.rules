@@ -1,0 +1,200 @@
+rules_version = '2';
+
+// ══════════════════════════════════════════════════════════════
+//  KoneKt — Firestore Security Rules
+// ══════════════════════════════════════════════════════════════
+//
+//  Collections :
+//    users          – profils utilisateurs (prestataires & visiteurs)
+//    verifications  – demandes de vérification d'identité
+//    reviews        – avis laissés sur les prestataires
+//    commandes      – commandes client → prestataire
+//    conversations  – fils de discussion (+ sous-collection messages)
+//    signalements   – signalements d'abus
+//
+//  Tout autre chemin est bloqué par défaut.
+// ══════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Fonctions utilitaires ──────────────────────────────────
+
+    // L'utilisateur est authentifié
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // L'utilisateur est propriétaire du document uid
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // L'utilisateur courant est admin (rôle stocké dans son document)
+    function isAdmin() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Le champ verifie n'est pas modifié (protection pour les utilisateurs non-admin)
+    function verifieUnchanged() {
+      return !('verifie' in request.resource.data)
+          || request.resource.data.verifie == resource.data.verifie;
+    }
+
+    // Un utilisateur est participant d'une conversation
+    function isParticipant(convData) {
+      return request.auth.uid in convData.participants;
+    }
+
+
+    // ── users ──────────────────────────────────────────────────
+    //
+    // Lecture :
+    //   • Chaque utilisateur lit son propre profil
+    //   • Les profils prestataires sont lisibles par tout utilisateur connecté
+    //     (nécessaire pour le marketplace — la requête doit utiliser
+    //      .where('role','==','prestataire') pour respecter cette règle)
+    //   • L'admin lit tout
+    //
+    // Écriture :
+    //   • Création : l'utilisateur crée uniquement son propre document
+    //     et ne peut pas se marquer verifie=true lui-même
+    //   • Modification : l'utilisateur modifie son propre profil mais
+    //     ne peut pas toucher au champ verifie
+    //   • Seul l'admin peut modifier verifie et supprimer des profils
+    // ──────────────────────────────────────────────────────────
+
+    match /users/{uid} {
+
+      allow read: if isOwner(uid)
+                  || (isSignedIn() && resource.data.role == 'prestataire')
+                  || isAdmin();
+
+      allow create: if isOwner(uid)
+                    && (!('verifie' in request.resource.data)
+                        || request.resource.data.verifie == false);
+
+      allow update: if (isOwner(uid) && verifieUnchanged())
+                    || isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+
+    // ── verifications ──────────────────────────────────────────
+    //
+    //   • Tout utilisateur connecté peut soumettre une demande
+    //     (prestataires lors de l'inscription)
+    //   • Lecture, modification et suppression réservées à l'admin
+    // ──────────────────────────────────────────────────────────
+
+    match /verifications/{docId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+
+    // ── reviews ────────────────────────────────────────────────
+    //
+    //   • Lisibles par tout utilisateur connecté
+    //   • Créées uniquement par des utilisateurs connectés
+    //     (auteurId doit correspondre à l'uid courant)
+    //   • Modifiables / supprimables uniquement par l'auteur
+    // ──────────────────────────────────────────────────────────
+
+    match /reviews/{reviewId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+                    && request.resource.data.auteurId == request.auth.uid;
+
+      allow update, delete: if isSignedIn()
+                            && resource.data.auteurId == request.auth.uid;
+    }
+
+
+    // ── commandes ──────────────────────────────────────────────
+    //
+    //   • Créées uniquement par le client (clientUid == uid courant)
+    //   • Visibles et modifiables uniquement par :
+    //       – le client  (clientUid)
+    //       – le prestataire  (prestId)
+    //   • L'admin peut tout lire/modifier pour la gestion
+    // ──────────────────────────────────────────────────────────
+
+    match /commandes/{cmdId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.clientUid == request.auth.uid;
+
+      allow read, update: if isSignedIn()
+                          && (resource.data.clientUid == request.auth.uid
+                              || resource.data.prestId  == request.auth.uid)
+                          || isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+
+    // ── conversations & messages ───────────────────────────────
+    //
+    //   Conversations :
+    //     • Créées par tout utilisateur connecté, à condition que
+    //       son uid figure dans le tableau participants
+    //     • Lues / mises à jour uniquement par les participants
+    //
+    //   Messages (sous-collection) :
+    //     • Lus uniquement par les participants de la conversation
+    //     • Créés uniquement par un participant (from == uid courant)
+    //     • Non modifiables / non supprimables (immutables)
+    // ──────────────────────────────────────────────────────────
+
+    match /conversations/{convId} {
+      allow create: if isSignedIn()
+                    && request.auth.uid in request.resource.data.participants;
+
+      allow read, update: if isSignedIn()
+                          && request.auth.uid in resource.data.participants;
+
+      allow delete: if isAdmin();
+
+      match /messages/{msgId} {
+        function convParticipants() {
+          return get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
+        }
+
+        allow read: if isSignedIn()
+                    && request.auth.uid in convParticipants();
+
+        allow create: if isSignedIn()
+                      && request.auth.uid in convParticipants()
+                      && request.resource.data.from == request.auth.uid;
+
+        // Les messages sont immuables
+        allow update, delete: if false;
+      }
+    }
+
+
+    // ── signalements ───────────────────────────────────────────
+    //
+    //   • Tout utilisateur connecté peut signaler un abus
+    //   • Lecture, traitement et suppression réservés à l'admin
+    // ──────────────────────────────────────────────────────────
+
+    match /signalements/{docId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+
+    // ── Blocage par défaut ─────────────────────────────────────
+    //
+    //   Toute collection non listée ci-dessus est bloquée.
+    // ──────────────────────────────────────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
