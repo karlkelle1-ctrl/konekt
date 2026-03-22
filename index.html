@@ -1675,30 +1675,26 @@ function goTab(tab){
 // ══════════════════════════════════════════════
 //  HOME — LISTE PRESTATAIRES
 // ══════════════════════════════════════════════
-function renderHome(){
-  if(STATE.selPrest){ renderPrestDetail(); return; }
+function computeFiltered(){
   const q = (searchVal || '').toLowerCase();
-  let filtered = PRESTS.map(function(p){
+  let list = PRESTS.map(function(p){
     const hay = [p.nom,p.metier,p.ville].concat(Array.isArray(p.tags)?p.tags:[]).join(' ').toLowerCase();
     const match = (activeCat==='all'||p.cat===activeCat) && (!q || hay.includes(q));
     const dist = USER_GEO ? distanceKm(USER_GEO.lat, USER_GEO.lng, p.lat, p.lng) : null;
     return Object.assign({}, p, { _match: match, _dist: dist });
   }).filter(function(p){ return p._match; });
-
   if(USER_GEO){
-    filtered.sort(function(a,b){
+    list.sort(function(a,b){
       const ad = a._dist == null ? 1e9 : a._dist;
       const bd = b._dist == null ? 1e9 : b._dist;
       return ad - bd;
     });
   }
+  return list;
+}
 
-  const catBtns=CATS.map(c=>`
-    <button onclick="setCat('${c.id}')" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:none;background:${activeCat===c.id?'var(--accent)':'var(--sand)'};color:${activeCat===c.id?'#fff':'var(--text2)'};font-size:12px;font-weight:700;transition:all .2s">
-      <span>${c.icon}</span><span>${c.label}</span>
-    </button>`).join('');
-
-  const cards=filtered.map((p,i)=>`
+function buildCards(filtered){
+  return filtered.map((p,i)=>`
     <div onclick="selPrest('${p.id}')" style="background:var(--card);border:1.5px solid var(--border);border-radius:22px;padding:0;cursor:pointer;animation:fadeUp .45s cubic-bezier(.22,1,.36,1) ${i*.06}s both;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 12px rgba(4,13,26,.06);transition:transform .2s,box-shadow .2s"
       onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(4,13,26,.12)'"
       onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(4,13,26,.06)'">
@@ -1729,6 +1725,37 @@ function renderHome(){
         </div>
       </div>
     </div>`).join('');
+}
+
+function updatePrestList(){
+  const inp = document.getElementById('search-home');
+  const sel = inp ? inp.selectionStart : null;
+
+  const filtered = computeFiltered();
+  const cards = buildCards(filtered);
+
+  const listEl = document.getElementById('prest-list');
+  if(listEl) listEl.innerHTML = cards || `<div class="card" style="text-align:center;color:var(--muted)">${t('no_provider')}</div>`;
+
+  const countEl = document.getElementById('prest-count');
+  if(countEl) countEl.textContent = `${filtered.length} ${t('providers_label')}`;
+
+  const dispoEl = document.getElementById('prest-dispo');
+  if(dispoEl) dispoEl.textContent = `${filtered.filter(p=>p.online).length} ${t('online_label')}`;
+
+  const activeEl = document.getElementById('prest-active-count');
+  if(activeEl) activeEl.textContent = `🔗 ${filtered.length} ${t('active_providers')}`;
+
+  if(inp && sel !== null){ inp.focus(); inp.setSelectionRange(sel, sel); }
+}
+
+function renderHome(){
+  if(STATE.selPrest){ renderPrestDetail(); return; }
+
+  const catBtns=CATS.map(c=>`
+    <button onclick="setCat('${c.id}')" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:none;background:${activeCat===c.id?'var(--accent)':'var(--sand)'};color:${activeCat===c.id?'#fff':'var(--text2)'};font-size:12px;font-weight:700;transition:all .2s">
+      <span>${c.icon}</span><span>${c.label}</span>
+    </button>`).join('');
 
   s(`
     <div style="padding-bottom:90px;background:var(--bg)">
@@ -1743,7 +1770,7 @@ function renderHome(){
 
         <div class="input-field" style="margin-bottom:12px">
           <span style="margin-right:8px;font-size:18px">🔎</span>
-          <input id="search-home" value="${searchVal.replace(/"/g,'&quot;')}" oninput="searchVal=this.value; renderHome()" placeholder="${t('search_placeholder')}"/>
+          <input id="search-home" value="${searchVal.replace(/"/g,'&quot;')}" oninput="searchVal=this.value; updatePrestList()" placeholder="${t('search_placeholder')}"/>
         </div>
 
         <div style="display:flex;gap:8px;overflow:auto;padding-bottom:10px;margin-bottom:8px">
@@ -1762,24 +1789,23 @@ function renderHome(){
           <div style="position:absolute;right:40px;bottom:-26px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.06)"></div>
           <div style="font-size:11px;font-weight:800;letter-spacing:1px;opacity:.85;margin-bottom:10px">${t('platform_no1')}</div>
           <div style="font-size:18px;font-weight:800;line-height:1.25;max-width:220px;margin-bottom:14px">${t('find_fast')}</div>
-          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:50px;font-weight:700;font-size:13px">🔗 ${filtered.length} ${t('active_providers')}</div>
+          <div id="prest-active-count" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:50px;font-weight:700;font-size:13px"></div>
         </div>
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-size:16px;font-weight:800">${filtered.length} ${t('providers_label')}</div>
-          <div style="font-size:12px;color:var(--muted)">${filtered.filter(p=>p.online).length} ${t('online_label')}</div>
+          <div id="prest-count" style="font-size:16px;font-weight:800"></div>
+          <div id="prest-dispo" style="font-size:12px;color:var(--muted)"></div>
         </div>
 
-        ${cards || `<div class="card" style="text-align:center;color:var(--muted)">${t('no_provider')}</div>`}
+        <div id="prest-list"></div>
       </div>
     </div>`);
+
+  updatePrestList();
 }
 
 function setCat(c){ activeCat=c; renderHome(); }
-function doSearch(v){
-  searchVal=v;
-  renderHome();
-}
+function doSearch(v){ searchVal=v; updatePrestList(); }
 function selPrest(id){
   STATE.selPrest = PRESTS.find(function(p){ return String(p.id)===String(id); });
   if(STATE.selPrest) loadReviewsRealtime(id);
