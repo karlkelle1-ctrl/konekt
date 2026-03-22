@@ -2139,8 +2139,8 @@ function renderChat(){
       <button onclick="selConvId=null;renderMsgList()" style="background:var(--card);border:none;border-radius:10px;color:var(--text);width:36px;height:36px;font-size:17px;display:flex;align-items:center;justify-content:center">←</button>
       <div class="avatar" style="width:40px;height:40px;background:${p.couleur}22;border:1.5px solid ${p.couleur}55;font-size:20px">${p.emoji}</div>
       <div style="flex:1"><div style="font-weight:800;font-size:14px">${p.nom}</div><div id="chat-status" style="font-size:11px;color:${p.couleur};font-weight:600">${p.dispo?APP_LANG==='en'?'Online':'En ligne':APP_LANG==='en'?'Offline':'Hors ligne'}</div></div>
-      <button style="width:34px;height:34px;border-radius:10px;background:#25D36618;border:1px solid #25D36633;font-size:17px">💬</button>
-      <button style="width:34px;height:34px;border-radius:10px;background:var(--card);border:1px solid var(--border);font-size:17px">📞</button>
+      <button onclick="openWhatsApp('${p.tel||''}')" title="WhatsApp" style="width:34px;height:34px;border-radius:10px;background:#25D36618;border:1px solid #25D36633;font-size:17px">💬</button>
+      <button onclick="callPrest('${p.tel||''}')" title="Appeler" style="width:34px;height:34px;border-radius:10px;background:var(--card);border:1px solid var(--border);font-size:17px">📞</button>
     </div>
     <div id="chat-msgs" style="flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch">${bubbles}<div id="chat-bottom"></div></div>
     <div id="typing-ind" style="padding:6px 14px;display:none">
@@ -2164,6 +2164,16 @@ function renderChat(){
 }
 
 function chatEnter(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } }
+
+function openWhatsApp(tel){
+  if(!tel){ showToast('Numéro WhatsApp non disponible','var(--warn)'); return; }
+  const num = tel.replace(/[^0-9+]/g,'').replace(/^\+/,'');
+  window.open('https://wa.me/'+num, '_blank');
+}
+function callPrest(tel){
+  if(!tel){ showToast('Numéro de téléphone non disponible','var(--warn)'); return; }
+  window.location.href = 'tel:'+tel;
+}
 
 function sendMsg(){
   var inp = $('chat-inp'); if(!inp) return;
@@ -2567,7 +2577,9 @@ function showSecurityModal(){
   document.getElementById('sec-save').addEventListener('click', function(){
     var pass = document.getElementById('sec-pass').value.trim();
     if(pass.length < 6){ showToast('Minimum 6 caractères','var(--err)'); return; }
-    auth.currentUser.updatePassword(pass)
+    var cu = auth.currentUser;
+    if(!cu){ showToast('Session expirée, reconnecte-toi','var(--err)'); return; }
+    cu.updatePassword(pass)
       .then(function(){ showToast('✅ Mot de passe modifié !'); modal.remove(); })
       .catch(function(e){ showToast('Erreur: ' + e.message,'var(--err)'); });
   });
@@ -2821,13 +2833,16 @@ function renderAdminUsers(){
 }
 
 function renderAdminHome(){
+  const avgNote = PRESTS.length
+    ? (PRESTS.reduce(function(a,p){ return a+(Number(p.note)||0); }, 0) / PRESTS.length).toFixed(1)
+    : '—';
   const stats=[
-    {l:"Prestataires",v:248,d:"+12 ce mois",i:"🔧",c:"var(--accent)"},
-    {l:"Visiteurs",v:1840,d:"+134 ce mois",i:"👤",c:"var(--teal)"},
-    {l:"Commandes",v:527,d:"+43 ce mois",i:"📦",c:"var(--gold)"},
-    {l:"CA estimé",v:"4,2M F",d:"+18%",i:"💰",c:"var(--purple)"},
+    {l:"Prestataires",v:PRESTS.length,d:"actifs",i:"🔧",c:"var(--accent)",id:"astat-prests"},
+    {l:"Utilisateurs",v:'...',d:"inscrits",i:"👤",c:"var(--teal)",id:"astat-users"},
+    {l:"Commandes",v:'...',d:"total",i:"📦",c:"var(--gold)",id:"astat-cmds"},
+    {l:"Note moy.",v:avgNote+'★',d:"sur 5",i:"⭐",c:"#FBBF24",id:"astat-note"},
   ];
-  const statCards=stats.map((s,i)=>`<div style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:16px;box-shadow:0 2px 10px rgba(4,13,26,.05) 14px;animation:fadeUp .4s ease ${i*.06}s both;position:relative;overflow:hidden"><div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:${s.c}18;pointer-events:none"></div><div style="font-size:26px;margin-bottom:7px">${s.i}</div><div style="font-size:20px;font-weight:800">${s.v}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${s.l}</div><div style="font-size:10px;color:${s.c};font-weight:700;margin-top:5px">${s.d}</div></div>`).join('');
+  const statCards=stats.map((s,i)=>`<div style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:16px;box-shadow:0 2px 10px rgba(4,13,26,.05) 14px;animation:fadeUp .4s ease ${i*.06}s both;position:relative;overflow:hidden"><div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:${s.c}18;pointer-events:none"></div><div style="font-size:26px;margin-bottom:7px">${s.i}</div><div id="${s.id}" style="font-size:20px;font-weight:800">${s.v}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${s.l}</div><div style="font-size:10px;color:${s.c};font-weight:700;margin-top:5px">${s.d}</div></div>`).join('');
   s(`<div style="padding:18px 14px 80px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
       <div><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase">Administration</div><div style="font-size:19px;font-weight:800"><span style="color:#1A8A4A">K</span>one<span style="color:#5BB8F5">K</span>t</div></div>
@@ -2837,6 +2852,16 @@ function renderAdminHome(){
     <div onclick="setAdminTab('val')" style="background:#F59E0B18;border:1.5px solid #F59E0B44;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:13px;cursor:pointer;margin-bottom:10px"><span style="font-size:26px">⏳</span><div style="flex:1"><div style="font-weight:700;color:var(--warn)">${pendingPrests.length} validations en attente</div><div style="font-size:11px;color:var(--muted)">Cliquez pour traiter</div></div><span style="color:var(--muted);font-size:17px">›</span></div>
     <div onclick="setAdminTab('sigs')" style="background:#EF444418;border:1.5px solid #EF444444;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:13px;cursor:pointer"><span style="font-size:26px">🚨</span><div style="flex:1"><div style="font-weight:700;color:var(--err)">${signals.length} signalements ouverts</div><div style="font-size:11px;color:var(--muted)">Cliquez pour examiner</div></div><span style="color:var(--muted);font-size:17px">›</span></div>
   </div>`);
+  // Mise à jour async des compteurs Firestore
+  Promise.all([
+    db.collection('users').where('role','==','visiteur').get().catch(function(){ return {size:0}; }),
+    db.collection('commandes').get().catch(function(){ return {size:0}; })
+  ]).then(function(results){
+    var uEl = document.getElementById('astat-users');
+    var cEl = document.getElementById('astat-cmds');
+    if(uEl) uEl.textContent = results[0].size;
+    if(cEl) cEl.textContent = results[1].size;
+  });
 }
 
 function renderAdminVal(){
@@ -3016,6 +3041,31 @@ try {
 } catch(err){
   document.body.style.background = '#071428';
   document.body.innerHTML = '<div style="color:#fff;padding:40px;text-align:center"><div style="font-size:48px">⚠️</div><div style="margin-top:16px;font-size:16px">Erreur de démarrage</div><div style="margin-top:8px;font-size:12px;opacity:.7">' + err.message + '</div></div>';
+}
+
+// Alias de fonctions pour compatibilité avec les onclick HTML
+// (certains boutons référencent ces noms historiques)
+function submitReview(prestId, reviewId){ saveReview(prestId, reviewId); }
+function editReview(prestId){ openReviewModal(prestId); }
+function openOrderModal(){ openNewOrder(); }
+function submitOrder(){
+  var btn = document.getElementById('ord-save');
+  if(btn) btn.click();
+}
+function adminApprove(id){ validerPrest(id, 'ok'); }
+function adminReject(id){ validerPrest(id, 'non'); }
+function deleteAccount(){
+  if(!STATE.user || !STATE.user.uid){ showToast('Non connecté','var(--err)'); return; }
+  if(!confirm('Supprimer définitivement ton compte ? Cette action est irréversible.')) return;
+  const uid = STATE.user.uid;
+  const cu = auth.currentUser;
+  db.collection('users').doc(uid).delete()
+    .then(function(){ return cu ? cu.delete() : Promise.resolve(); })
+    .then(function(){
+      STATE.user = null; STATE.screen = 'welcome'; render();
+      showToast('Compte supprimé');
+    })
+    .catch(function(e){ showToast('Erreur suppression: '+e.message,'var(--err)'); });
 }
 
 // Global click handler for dynamically rendered buttons
