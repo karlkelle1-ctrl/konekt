@@ -481,13 +481,9 @@ function stopRealtime(){
 }
 function loadPrestatairesRealtime(){
   try{ if(PRESTS_UNSUB) PRESTS_UNSUB(); }catch(e){}
-  PRESTS_UNSUB = db.collection('users').onSnapshot(function(snap){
+  PRESTS_UNSUB = db.collection('users').where('role', '==', 'prestataire').onSnapshot(function(snap){
     PRESTS = snap.docs
       .map(function(doc){ return { id: doc.id, ...(doc.data() || {}) }; })
-      .filter(function(u){
-        const roles = getUserRoles(u);
-        return roles.includes('prestataire');
-      })
       .map(function(u){ return normalizePrest(u.id, u); });
     if(STATE.screen==='app' && STATE.tab==='home' && !STATE.selPrest){ renderHome(); }
     if(STATE.screen==='app' && STATE.tab==='profile' && STATE.user && STATE.user.role==='admin'){ renderProfile(); }
