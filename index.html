@@ -751,7 +751,18 @@ const I18N = {
     visitor_chip:'👤 Visiteur / Client',
     my_activities_services:'Mes activités / services',
     publish_activities_text:'Publie tes activités, tarifs, commentaires et réalisations.',
-    no_activity_yet:'Aucune activité publiée pour le moment.'
+    no_activity_yet:'Aucune activité publiée pour le moment.',
+    geo_not_supported:'Géolocalisation non prise en charge',
+    position_detected:'Position détectée ✓',
+    geo_error:'Impossible d\'obtenir la position',
+    verified:'Vérifié',
+    active_providers:'prestataires actifs',
+    providers_label:'prestataires',
+    online_label:'en ligne',
+    no_results_title:'Aucun résultat',
+    try_other_keyword:'Essaie un autre mot-clé',
+    position_updated:'Position mise à jour',
+    image_too_heavy:'Image trop lourde. Essaie une photo plus légère.'
   },
   en: {
     home:'Home', msgs:'Messages', cmds:'Orders', profile:'Profile',
@@ -819,7 +830,18 @@ const I18N = {
     visitor_chip:'👤 Visitor / Client',
     my_activities_services:'My activities / services',
     publish_activities_text:'Publish your activities, prices, comments and work.',
-    no_activity_yet:'No activity published yet.'
+    no_activity_yet:'No activity published yet.',
+    geo_not_supported:'Geolocation not supported',
+    position_detected:'Location detected ✓',
+    geo_error:'Unable to get your location',
+    verified:'Verified',
+    active_providers:'active providers',
+    providers_label:'providers',
+    online_label:'online',
+    no_results_title:'No results',
+    try_other_keyword:'Try another keyword',
+    position_updated:'Location updated',
+    image_too_heavy:'Image too large. Try a lighter photo.'
   }
 };
 
@@ -1138,37 +1160,39 @@ function distanceKm(lat1,lng1,lat2,lng2){
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 function requestUserLocation(){
-  if(!navigator.geolocation){ showToast('Géolocalisation non prise en charge','var(--err)'); return; }
+  if(!navigator.geolocation){ showToast(t('geo_not_supported'),'var(--err)'); return; }
   GEO_BUSY = true;
+  renderHome();
   navigator.geolocation.getCurrentPosition(function(pos){
     USER_GEO = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     GEO_BUSY = false;
-    showToast('Position détectée');
+    showToast(t('position_detected'));
     if(STATE.screen==='app' && STATE.tab==='home' && !STATE.selPrest) renderHome();
   }, function(err){
     GEO_BUSY = false;
-    showToast('Impossible d\'obtenir la position','var(--err)');
+    showToast(t('geo_error'),'var(--err)');
+    renderHome();
   }, { enableHighAccuracy:true, timeout:10000, maximumAge:60000 });
 }
 function setPrestGeoFromDevice(){
   if(!STATE.user || STATE.user.role!=='prestataire'){ return; }
-  if(!navigator.geolocation){ showToast('Géolocalisation non prise en charge','var(--err)'); return; }
+  if(!navigator.geolocation){ showToast(t('geo_not_supported'),'var(--err)'); return; }
   navigator.geolocation.getCurrentPosition(function(pos){
     const payload = { lat: pos.coords.latitude, lng: pos.coords.longitude, online:true };
     db.collection('users').doc(STATE.user.uid).set(payload, { merge:true }).then(function(){
       Object.assign(STATE.user, payload);
-      showToast('Position mise à jour');
+      showToast(t('position_updated'));
       renderProfile();
     }).catch(function(e){
       const msg = (e && e.message || '');
       if(msg.includes('photoBase64') || msg.includes('longer than')){
-        showToast('Image trop lourde. Essaie une photo plus légère.','var(--err)');
+        showToast(t('image_too_heavy'),'var(--err)');
       } else {
         showToast('Erreur: '+e.message,'var(--err)');
       }
     });
   }, function(){
-    showToast('Impossible d\'obtenir la position','var(--err)');
+    showToast(t('geo_error'),'var(--err)');
   }, { enableHighAccuracy:true, timeout:10000, maximumAge:60000 });
 }
 
@@ -1685,7 +1709,7 @@ function renderHome(){
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span style="font-weight:800;font-size:15px;color:var(--text)">${p.nom}</span>
-              ${p.verifie?'<span style="font-size:11px;background:rgba(26,138,74,.12);color:var(--ok);padding:1px 6px;border-radius:20px;font-weight:700">✓ Vérifié</span>':''}
+              ${p.verifie?`<span style="font-size:11px;background:rgba(26,138,74,.12);color:var(--ok);padding:1px 6px;border-radius:20px;font-weight:700">✓ ${t('verified')}</span>`:''}
             </div>
             <div style="color:${p.couleur};font-size:12px;font-weight:700;margin-top:2px">${p.metier}</div>
             <div style="color:var(--muted);font-size:11px;margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1738,12 +1762,12 @@ function renderHome(){
           <div style="position:absolute;right:40px;bottom:-26px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.06)"></div>
           <div style="font-size:11px;font-weight:800;letter-spacing:1px;opacity:.85;margin-bottom:10px">${t('platform_no1')}</div>
           <div style="font-size:18px;font-weight:800;line-height:1.25;max-width:220px;margin-bottom:14px">${t('find_fast')}</div>
-          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:50px;font-weight:700;font-size:13px">🔗 ${filtered.length} ${APP_LANG==='en'?'active providers':'prestataires actifs'}</div>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:50px;font-weight:700;font-size:13px">🔗 ${filtered.length} ${t('active_providers')}</div>
         </div>
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-size:16px;font-weight:800">${filtered.length} ${APP_LANG==='en'?'providers':'prestataires'}</div>
-          <div style="font-size:12px;color:var(--muted)">${filtered.filter(p=>p.online).length} ${APP_LANG==='en'?'online':'en ligne'}</div>
+          <div style="font-size:16px;font-weight:800">${filtered.length} ${t('providers_label')}</div>
+          <div style="font-size:12px;color:var(--muted)">${filtered.filter(p=>p.online).length} ${t('online_label')}</div>
         </div>
 
         ${cards || `<div class="card" style="text-align:center;color:var(--muted)">${t('no_provider')}</div>`}
@@ -1754,35 +1778,7 @@ function renderHome(){
 function setCat(c){ activeCat=c; renderHome(); }
 function doSearch(v){
   searchVal=v;
-  // Only update the results, not the whole page (prevents cursor jumping)
-  const filtered = PRESTS.filter(p=>
-    !searchVal ||
-    p.nom.toLowerCase().includes(searchVal.toLowerCase()) ||
-    p.metier.toLowerCase().includes(searchVal.toLowerCase()) ||
-    p.ville.toLowerCase().includes(searchVal.toLowerCase()) ||
-    p.tags.some(t=>t.toLowerCase().includes(searchVal.toLowerCase()))
-  );
-  const listEl = document.getElementById('prest-list');
-  if(listEl){
-    if(filtered.length===0){
-      listEl.innerHTML=`<div style="text-align:center;padding:60px 20px"><div style="font-size:56px;margin-bottom:12px">🔍</div><div style="font-weight:800;font-size:18px;color:var(--text)">Aucun résultat</div><div style="color:var(--muted);font-size:14px;margin-top:6px">Essaie un autre mot-clé</div></div>`;
-    } else {
-      listEl.innerHTML = filtered.map((p,i)=>prestCard(p,i)).join('');
-    }
-    // Update count
-    const countEl = document.getElementById('prest-count');
-    if(countEl) countEl.textContent = filtered.length + ' prestataire' + (filtered.length>1?'s':'');
-    const dispoEl = document.getElementById('prest-dispo');
-    if(dispoEl) dispoEl.textContent = filtered.filter(p=>p.dispo).length + ' disponible' + (filtered.filter(p=>p.dispo).length>1?'s':'');
-  } else {
-    renderHome();
-    // Restore focus after full re-render
-    const inp = document.getElementById('search-inp');
-    if(inp){ inp.focus(); inp.setSelectionRange(v.length, v.length); }
-  }
-  // Show/hide clear button
-  const clearBtn = document.getElementById('search-clear');
-  if(clearBtn) clearBtn.style.display = v ? 'block' : 'none';
+  renderHome();
 }
 function selPrest(id){
   STATE.selPrest = PRESTS.find(function(p){ return String(p.id)===String(id); });
