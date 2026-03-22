@@ -42,12 +42,6 @@ service cloud.firestore {
           || request.resource.data.verifie == resource.data.verifie;
     }
 
-    // Un utilisateur est participant d'une conversation
-    function isParticipant(convData) {
-      return request.auth.uid in convData.participants;
-    }
-
-
     // ── users ──────────────────────────────────────────────────
     //
     // Lecture :
