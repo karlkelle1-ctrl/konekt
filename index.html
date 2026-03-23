@@ -1814,9 +1814,9 @@ function renderHome(){
     <div style="padding-bottom:90px;background:var(--bg)">
       <div style="padding:20px 16px 0;background:rgba(7,20,40,.95);position:sticky;top:0;z-index:10;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <div>
+          <div onclick="handleLogoTap()" style="cursor:default;user-select:none">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.5px"><span style="color:#1A8A4A">K</span>one<span style="color:#5BB8F5">K</span>t</div>
             <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.5px">📍 ${USER_GEO ? t('around_you') : t('all_cameroon')}</div>
-            <div style="font-size:24px;font-weight:800;letter-spacing:-.5px">${t('home_title')}</div>
           </div>
           <button onclick="showToast(t('notif_soon'))" style="width:48px;height:48px;border:none;border-radius:16px;background:var(--card);font-size:22px">🔔</button>
         </div>
@@ -2152,7 +2152,10 @@ function renderMsgList(){
   const totalUnread=CONVS.reduce((a,c)=>a+c.nonLus,0);
   s(`<div style="padding-bottom:80px">
     <div style="padding:18px 16px 14px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)">
-      <h2 style="font-size:20px;font-weight:800">Messages ${totalUnread>0?`<span style="color:var(--accent)">(${totalUnread})</span>`:''}</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="font-size:20px;font-weight:800">Messages ${totalUnread>0?`<span style="color:var(--accent)">(${totalUnread})</span>`:''}</h2>
+        <div onclick="handleLogoTap()" style="cursor:default;user-select:none;font-size:16px;font-weight:800;letter-spacing:-.5px;opacity:.5"><span style="color:#1A8A4A">K</span>one<span style="color:#5BB8F5">K</span>t</div>
+      </div>
     </div>
     ${CONVS.length===0?`<div style="text-align:center;padding:60px 0"><div style="font-size:56px;margin-bottom:12px">💬</div><div style="font-weight:700">${t('no_conversation')}</div></div>`:items}
   </div>`);
@@ -2711,6 +2714,7 @@ function renderProfile(){
       </div>`;
     }
     s(`<div style="padding:22px 16px 80px;animation:fadeUp .4s ease">${langSwitchHTML()}${verificationBannerHTML()}
+      <div onclick="handleLogoTap()" style="cursor:default;user-select:none;text-align:right;font-size:15px;font-weight:800;letter-spacing:-.5px;opacity:.4;margin-bottom:8px"><span style="color:#1A8A4A">K</span>one<span style="color:#5BB8F5">K</span>t</div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
         <div style="width:68px;height:68px;border-radius:20px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden">${u.photoURL?`<img src="${u.photoURL}" style="width:100%;height:100%;object-fit:cover"/>`:'🔧'}</div>
         <div style="flex:1">
