@@ -1720,7 +1720,7 @@ async function doLogin(){
 // ══════════════════════════════════════════════
 function renderApp(){
   const t=STATE.tab;
-  const isAdmin = STATE._adminMode === true;
+  const isAdmin = STATE._adminMode === true && STATE.user && STATE.user.role === 'admin';
 
   if(isAdmin){
     // Admin has its own nav inside
@@ -2875,7 +2875,11 @@ function deleteProduct(productId){
 
 async function logout(){
   try { await window.FB.fbLogout(); } catch(e){}
-  STATE.user=null; STATE.screen='welcome'; render();
+  STATE._adminMode = false;
+  STATE.user = null;
+  STATE.tab = 'home';
+  STATE.screen = 'welcome';
+  render();
 }
 
 // ══════════════════════════════════════════════
