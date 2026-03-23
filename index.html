@@ -2779,10 +2779,11 @@ function renderAdmin(){
       ${signals.length>0?`<div class="nav-badge" style="background:var(--err)">${signals.length}</div>`:''}
     </button>
     <button class="nav-btn" onclick="logout()"><span class="nav-icon">🚪</span><span class="nav-lbl">Quitter</span></button>`;
-  if(t==='home') renderAdminHome();
+  if(t==='home') renderAdminHome().catch(e=>console.error(e));
   else if(t==='users') renderAdminUsers();
   else if(t==='verifs') renderAdminVerifs().catch(e=>console.error(e));
-  else if(t==='sigs') renderAdminSigs();
+  else if(t==='sigs') renderAdminSigs().catch(e=>console.error(e));
+  else if(t==='val') renderAdminVal().catch(e=>console.error(e));
 }
 
 function setAdminTab(t){ adminTab=t; renderAdmin(); }
@@ -2832,63 +2833,97 @@ function renderAdminUsers(){
   });
 }
 
-function renderAdminHome(){
-  const avgNote = PRESTS.length
-    ? (PRESTS.reduce(function(a,p){ return a+(Number(p.note)||0); }, 0) / PRESTS.length).toFixed(1)
-    : '—';
-  const stats=[
-    {l:"Prestataires",v:PRESTS.length,d:"actifs",i:"🔧",c:"var(--accent)",id:"astat-prests"},
-    {l:"Utilisateurs",v:'...',d:"inscrits",i:"👤",c:"var(--teal)",id:"astat-users"},
-    {l:"Commandes",v:'...',d:"total",i:"📦",c:"var(--gold)",id:"astat-cmds"},
-    {l:"Note moy.",v:avgNote+'★',d:"sur 5",i:"⭐",c:"#FBBF24",id:"astat-note"},
-  ];
-  const statCards=stats.map((s,i)=>`<div style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:16px;box-shadow:0 2px 10px rgba(4,13,26,.05) 14px;animation:fadeUp .4s ease ${i*.06}s both;position:relative;overflow:hidden"><div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:${s.c}18;pointer-events:none"></div><div style="font-size:26px;margin-bottom:7px">${s.i}</div><div id="${s.id}" style="font-size:20px;font-weight:800">${s.v}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${s.l}</div><div style="font-size:10px;color:${s.c};font-weight:700;margin-top:5px">${s.d}</div></div>`).join('');
+async function renderAdminHome(){
   s(`<div style="padding:18px 14px 80px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
       <div><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase">Administration</div><div style="font-size:19px;font-weight:800"><span style="color:#1A8A4A">K</span>one<span style="color:#5BB8F5">K</span>t</div></div>
       <div style="width:38px;height:38px;border-radius:11px;background:#FF6B2B22;border:1.5px solid #FF6B2B44;display:flex;align-items:center;justify-content:center;font-size:19px">🛡️</div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:20px">${statCards}</div>
-    <div onclick="setAdminTab('val')" style="background:#F59E0B18;border:1.5px solid #F59E0B44;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:13px;cursor:pointer;margin-bottom:10px"><span style="font-size:26px">⏳</span><div style="flex:1"><div style="font-weight:700;color:var(--warn)">${pendingPrests.length} validations en attente</div><div style="font-size:11px;color:var(--muted)">Cliquez pour traiter</div></div><span style="color:var(--muted);font-size:17px">›</span></div>
-    <div onclick="setAdminTab('sigs')" style="background:#EF444418;border:1.5px solid #EF444444;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:13px;cursor:pointer"><span style="font-size:26px">🚨</span><div style="flex:1"><div style="font-weight:700;color:var(--err)">${signals.length} signalements ouverts</div><div style="font-size:11px;color:var(--muted)">Cliquez pour examiner</div></div><span style="color:var(--muted);font-size:17px">›</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:20px" id="admin-stats-grid">
+      ${[0,1,2,3].map(()=>'<div style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:16px;text-align:center;color:var(--muted)">⏳</div>').join('')}
+    </div>
+    <div id="admin-home-actions"><div style="text-align:center;padding:20px;color:var(--muted)">Chargement...</div></div>
   </div>`);
-  // Mise à jour async des compteurs Firestore
-  Promise.all([
-    db.collection('users').where('role','==','visiteur').get().catch(function(){ return {size:0}; }),
-    db.collection('commandes').get().catch(function(){ return {size:0}; })
-  ]).then(function(results){
-    var uEl = document.getElementById('astat-users');
-    var cEl = document.getElementById('astat-cmds');
-    if(uEl) uEl.textContent = results[0].size;
-    if(cEl) cEl.textContent = results[1].size;
-  });
+  try {
+    const [usersSnap, commandesSnap, sigsSnap] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('commandes').get().catch(()=>({size:0,docs:[]})),
+      db.collection('signalements').get().catch(()=>({size:0,docs:[]}))
+    ]);
+    const allUsers = usersSnap.docs.map(d=>d.data());
+    const totalUsers = usersSnap.size;
+    const nbPrests = allUsers.filter(u=>u.role==='prestataire').length;
+    const nbVisitors = allUsers.filter(u=>u.role==='visiteur').length;
+    const nbCommandes = commandesSnap.size;
+    const nbSigs = sigsSnap.size;
+    const nbPending = allUsers.filter(u=>u.role==='prestataire' && !u.verifie).length;
+    const stats=[
+      {l:"Utilisateurs",v:totalUsers,d:"inscrits",i:"👤",c:"var(--teal)"},
+      {l:"Prestataires",v:nbPrests,d:"enregistrés",i:"🔧",c:"var(--accent)"},
+      {l:"Visiteurs",v:nbVisitors,d:"inscrits",i:"🏠",c:"#5BB8F5"},
+      {l:"Commandes",v:nbCommandes,d:"total",i:"📦",c:"var(--gold)"},
+    ];
+    const statCards=stats.map((st,i)=>`<div style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:16px;animation:fadeUp .4s ease ${i*.06}s both;position:relative;overflow:hidden"><div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:${st.c}18;pointer-events:none"></div><div style="font-size:26px;margin-bottom:7px">${st.i}</div><div style="font-size:20px;font-weight:800">${st.v}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${st.l}</div><div style="font-size:10px;color:${st.c};font-weight:700;margin-top:5px">${st.d}</div></div>`).join('');
+    const grid=document.getElementById('admin-stats-grid');
+    if(grid) grid.innerHTML=statCards;
+    const actions=document.getElementById('admin-home-actions');
+    if(actions) actions.innerHTML=`
+      <div onclick="setAdminTab('val')" style="background:#F59E0B18;border:1.5px solid #F59E0B44;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:13px;cursor:pointer;margin-bottom:10px"><span style="font-size:26px">⏳</span><div style="flex:1"><div style="font-weight:700;color:var(--warn)">${nbPending} validation${nbPending>1?'s':''} en attente</div><div style="font-size:11px;color:var(--muted)">Cliquez pour traiter</div></div><span style="color:var(--muted);font-size:17px">›</span></div>
+      <div onclick="setAdminTab('sigs')" style="background:#EF444418;border:1.5px solid #EF444444;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:13px;cursor:pointer"><span style="font-size:26px">🚨</span><div style="flex:1"><div style="font-weight:700;color:var(--err)">${nbSigs} signalement${nbSigs>1?'s':''} ouvert${nbSigs>1?'s':''}</div><div style="font-size:11px;color:var(--muted)">Cliquez pour examiner</div></div><span style="color:var(--muted);font-size:17px">›</span></div>`;
+  } catch(e){
+    console.error('renderAdminHome error:',e);
+    const grid=document.getElementById('admin-stats-grid');
+    if(grid) grid.innerHTML=`<div style="grid-column:1/-1;background:rgba(204,34,34,.1);border-radius:12px;padding:16px"><div style="color:var(--err);font-weight:700">Erreur: ${e.message}</div></div>`;
+  }
 }
 
-function renderAdminVal(){
-  const cards=pendingPrests.map((p,i)=>`
-    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .4s ease ${i*.07}s both;margin-bottom:10px">
-      <div style="padding:13px 14px;display:flex;gap:11px;align-items:center">
-        <div class="avatar" style="width:44px;height:44px;background:${p.couleur}22;border:1.5px solid ${p.couleur}55;font-size:22px">${p.emoji}</div>
-        <div style="flex:1"><div style="font-weight:800;font-size:14px">${p.nom}</div><div style="color:${p.couleur};font-size:12px;font-weight:600">${p.metier} · ${p.ville}</div>
-          <span style="background:${p.hasId?'#22C55E22':'#F59E0B22'};color:${p.hasId?'var(--ok)':'var(--warn)'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:5px;display:inline-block">${p.hasId?'🪪 ID soumise':'⚠️ ID manquante'}</span>
-        </div>
-      </div>
-      <div style="display:flex;border-top:1px solid var(--border)">
-        <button onclick="validerPrest('${p.id}','non')" style="flex:1;padding:11px;background:none;border:none;color:var(--err);font-weight:700;font-size:12px;border-right:1px solid var(--border)">✕ Refuser</button>
-        <button onclick="validerPrest('${p.id}','ok')" style="flex:1;padding:11px;background:none;border:none;color:var(--ok);font-weight:700;font-size:12px">✓ Valider</button>
-      </div>
-    </div>`).join('');
+async function renderAdminVal(){
   s(`<div style="padding:18px 14px 80px">
     <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Validations</h2>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:18px">${pendingPrests.length} demande${pendingPrests.length>1?'s':''} en attente</p>
-    ${pendingPrests.length===0?`<div style="text-align:center;padding:50px 0"><div style="font-size:56px">🎉</div><div style="font-weight:700;margin-top:12px">Tout est traité !</div></div>`:cards}
+    <div id="val-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div>
   </div>`);
+  try {
+    const snap = await db.collection('users').where('role','==','prestataire').where('verifie','==',false).get();
+    const prests = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const el = document.getElementById('val-list');
+    if(!el) return;
+    if(prests.length===0){
+      el.innerHTML=`<p style="color:var(--muted);font-size:13px;margin-bottom:18px">0 demande en attente</p><div style="text-align:center;padding:50px 0"><div style="font-size:56px">🎉</div><div style="font-weight:700;margin-top:12px">Tout est traité !</div></div>`;
+      return;
+    }
+    el.innerHTML=`<p style="color:var(--muted);font-size:13px;margin-bottom:18px">${prests.length} demande${prests.length>1?'s':''} en attente</p>`+prests.map((p,i)=>`
+      <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .4s ease ${i*.07}s both;margin-bottom:10px">
+        <div style="padding:13px 14px;display:flex;gap:11px;align-items:center">
+          <div class="avatar" style="width:44px;height:44px;background:var(--accent)22;border:1.5px solid var(--accent)55;font-size:22px">🔧</div>
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:14px">${p.nom||'Sans nom'}</div>
+            <div style="color:var(--accent);font-size:12px;font-weight:600">${p.metier||'Prestataire'} · ${p.ville||''}</div>
+            <span style="background:${p.photoBase64?'#22C55E22':'#F59E0B22'};color:${p.photoBase64?'var(--ok)':'var(--warn)'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:5px;display:inline-block">${p.photoBase64?'🪪 ID soumise':'⚠️ ID manquante'}</span>
+          </div>
+        </div>
+        <div style="display:flex;border-top:1px solid var(--border)">
+          <button onclick="validerPrest('${p.id}','non')" style="flex:1;padding:11px;background:none;border:none;color:var(--err);font-weight:700;font-size:12px;border-right:1px solid var(--border)">✕ Refuser</button>
+          <button onclick="validerPrest('${p.id}','ok')" style="flex:1;padding:11px;background:none;border:none;color:var(--ok);font-weight:700;font-size:12px">✓ Valider</button>
+        </div>
+      </div>`).join('');
+  } catch(e){
+    const el=document.getElementById('val-list');
+    if(el) el.innerHTML=`<div style="background:rgba(204,34,34,.1);border-radius:12px;padding:16px"><div style="color:var(--err);font-weight:700">Erreur: ${e.message}</div></div>`;
+  }
 }
 
-function validerPrest(id,action){
-  pendingPrests=pendingPrests.filter(p=>p.id!==id);
-  showToast(action==='ok'?'✅ Prestataire validé !':'❌ Demande refusée.', action==='ok'?'#22C55E':'#EF4444');
-  renderAdmin();
+async function validerPrest(id, action){
+  try {
+    if(action==='ok'){
+      await db.collection('users').doc(id).update({verifie:true, verifStatut:'approuve'});
+    } else {
+      await db.collection('users').doc(id).update({verifie:false, verifStatut:'refuse'});
+    }
+    showToast(action==='ok'?'✅ Prestataire validé !':'❌ Demande refusée.', action==='ok'?'#22C55E':'#EF4444');
+    renderAdminVal();
+  } catch(e){
+    showToast('Erreur: '+e.message,'var(--err)');
+  }
 }
 
 function renderAdminVerifs(){
@@ -2980,50 +3015,68 @@ function showVerifDetail(id){
 
 async function traiterVerif(id, action){
   try {
-    await db.collection("verifications").doc(id).update({verifStatut: action});
-    if(action==='approuve'){
-      // Get uid from verification doc and update user
-      const vSnap = await db.collection("verifications").doc(id).get();
-      if(vSnap.exists){
-        await db.collection("users").doc(vSnap.data().uid).update({verifie: true, verifStatut: 'approuve'});
-      }
-    }
+    await db.collection('users').doc(id).update({
+      verifie: action==='approuve',
+      verifStatut: action
+    });
   } catch(e){ console.error(e); }
   showToast(action==='approuve'?'✅ Badge ✓ accordé au prestataire !':'❌ Vérification refusée.', action==='approuve'?'var(--ok)':'var(--err)');
-  // In real app: update Firestore doc
   setTimeout(()=>renderAdminVerifs(), 100);
 }
 
-function renderAdminSigs(){
-  const gc={haute:{c:'var(--err)'},moyenne:{c:'var(--warn)'},basse:{c:'var(--teal)'}};
-  const cards=signals.map((sg,i)=>{
-    const g=gc[sg.gravite];
-    return `<div style="background:var(--card);border:1.5px solid ${g.c}44;border-radius:14px;overflow:hidden;animation:fadeUp .4s ease ${i*.07}s both;margin-bottom:11px">
-      <div style="background:${g.c}18;padding:11px 14px;display:flex;gap:8px;align-items:center">
-        <span style="font-size:17px">🚨</span><span style="font-weight:700;color:${g.c};font-size:13px">${sg.type}</span>
-        <span style="background:${g.c}22;color:${g.c};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:capitalize">${sg.gravite}</span>
-      </div>
-      <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:3px">De : <b style="color:var(--text)">${sg.de}</b> · Contre : <b style="color:var(--text)">${sg.contre}</b></div>
-        <div style="font-size:13px;background:var(--bg);border-radius:9px;padding:9px 11px;margin:9px 0;line-height:1.5">${sg.desc}</div>
-        <div style="display:flex;gap:8px">
-          <button style="flex:1;padding:9px;border-radius:9px;background:#EF444422;border:1px solid #EF444444;color:var(--err);font-weight:700;font-size:11px">Suspendre</button>
-          <button onclick="closeSig('${sg.id}')" style="flex:1;padding:9px;border-radius:9px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:11px">Clôturer</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+async function renderAdminSigs(){
   s(`<div style="padding:18px 14px 80px">
     <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Signalements</h2>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:18px">${signals.length} signalement${signals.length>1?'s':''} ouvert${signals.length>1?'s':''}</p>
-    ${signals.length===0?`<div style="text-align:center;padding:50px 0"><div style="font-size:56px">✅</div><div style="font-weight:700;margin-top:12px">Aucun signalement</div></div>`:cards}
+    <div id="sigs-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div>
   </div>`);
+  try {
+    const snap = await db.collection('signalements').get();
+    const sigs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const el = document.getElementById('sigs-list');
+    if(!el) return;
+    if(sigs.length===0){
+      el.innerHTML=`<p style="color:var(--muted);font-size:13px;margin-bottom:18px">0 signalement ouvert</p><div style="text-align:center;padding:50px 0"><div style="font-size:56px">✅</div><div style="font-weight:700;margin-top:12px">Aucun signalement</div></div>`;
+      return;
+    }
+    const gc={haute:{c:'var(--err)'},moyenne:{c:'var(--warn)'},basse:{c:'var(--teal)'}};
+    el.innerHTML=`<p style="color:var(--muted);font-size:13px;margin-bottom:18px">${sigs.length} signalement${sigs.length>1?'s':''} ouvert${sigs.length>1?'s':''}</p>`+sigs.map((sg,i)=>{
+      const g=gc[sg.gravite]||{c:'var(--muted)'};
+      return `<div style="background:var(--card);border:1.5px solid ${g.c}44;border-radius:14px;overflow:hidden;animation:fadeUp .4s ease ${i*.07}s both;margin-bottom:11px">
+        <div style="background:${g.c}18;padding:11px 14px;display:flex;gap:8px;align-items:center">
+          <span style="font-size:17px">🚨</span><span style="font-weight:700;color:${g.c};font-size:13px">${sg.type||'Signalement'}</span>
+          <span style="background:${g.c}22;color:${g.c};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:capitalize">${sg.gravite||'—'}</span>
+        </div>
+        <div style="padding:12px 14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px">De : <b style="color:var(--text)">${sg.auteur||sg.de||'Inconnu'}</b> · Contre : <b style="color:var(--text)">${sg.cible||sg.contre||'Inconnu'}</b></div>
+          <div style="font-size:13px;background:var(--bg);border-radius:9px;padding:9px 11px;margin:9px 0;line-height:1.5">${sg.description||sg.desc||'—'}</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="supprimerSig('${sg.id}')" style="flex:1;padding:9px;border-radius:9px;background:#EF444422;border:1px solid #EF444444;color:var(--err);font-weight:700;font-size:11px">Supprimer</button>
+            <button onclick="cloturerSig('${sg.id}')" style="flex:1;padding:9px;border-radius:9px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:11px">Clôturer</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    const el=document.getElementById('sigs-list');
+    if(el) el.innerHTML=`<div style="background:rgba(204,34,34,.1);border-radius:12px;padding:16px"><div style="color:var(--err);font-weight:700">Erreur: ${e.message}</div></div>`;
+  }
 }
 
-function closeSig(id){
-  signals=signals.filter(sg=>sg.id!==id);
-  showToast('✅ Signalement clôturé.');
-  renderAdmin();
+async function cloturerSig(id){
+  try {
+    await db.collection('signalements').doc(id).update({statut:'cloture'});
+    showToast('✅ Signalement clôturé.');
+  } catch(e){ showToast('Erreur: '+e.message,'var(--err)'); }
+  renderAdminSigs();
+}
+
+async function supprimerSig(id){
+  if(!confirm('Supprimer définitivement ce signalement ?')) return;
+  try {
+    await db.collection('signalements').doc(id).delete();
+    showToast('🗑️ Signalement supprimé.');
+  } catch(e){ showToast('Erreur: '+e.message,'var(--err)'); }
+  renderAdminSigs();
 }
 
 // ══════════════════════════════════════════════
