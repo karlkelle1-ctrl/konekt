@@ -82,9 +82,11 @@ textarea{resize:none;}
 .modal-overlay{position:fixed;inset:0;background:rgba(4,13,26,.5);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:flex-end;justify-content:center;}
 .modal-sheet{background:var(--bg);border-radius:28px 28px 0 0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;animation:slideUp .35s cubic-bezier(.22,1,.36,1);padding-bottom:env(safe-area-inset-bottom);}
 .modal-sheet::-webkit-scrollbar{display:none;}
-#cat-scroll::-webkit-scrollbar{display:none;}
 .hero-slide{position:absolute;inset:0;opacity:0;transition:opacity .6s ease;pointer-events:none;}
 .hero-slide.hs-active{opacity:1;pointer-events:auto;}
+@keyframes scroll-cats{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.cat-track{display:flex;gap:8px;width:max-content;animation:scroll-cats 20s linear infinite;}
+.cat-track:hover,.cat-track.paused{animation-play-state:paused;}
 .modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border2);margin:14px auto 0;}
 
 /* ── CARDS ── */
@@ -576,7 +578,7 @@ function startRealtime(){
 const ADMIN_PIN = "2580";
 let logoTaps=0, logoTimer=null;
 let activeCat="all", searchVal="", selConvId=null, selCmdId=null;
-let _heroTimer=null, _catScrollTimer=null, _heroIdx=0;
+let _heroTimer=null, _heroIdx=0;
 let USER_GEO = null;
 let GEO_BUSY = false;
 let MSG_INIT_DONE = false;
@@ -1834,8 +1836,10 @@ function renderHome(){
           <input id="search-home" value="${searchVal.replace(/"/g,'&quot;')}" oninput="searchVal=this.value; updatePrestList()" placeholder="${t('search_placeholder')}"/>
         </div>
 
-        <div id="cat-scroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:8px;scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth">
-          ${catBtns}
+        <div style="overflow:hidden;padding-bottom:10px;margin-bottom:8px"
+             ontouchstart="document.getElementById('cat-track').classList.add('paused')"
+             ontouchend="document.getElementById('cat-track').classList.remove('paused')">
+          <div id="cat-track" class="cat-track">${catBtns}${catBtns}</div>
         </div>
 
         <div style="display:flex;gap:8px;overflow:auto;padding-bottom:8px;margin-bottom:10px">
@@ -1854,20 +1858,12 @@ function renderHome(){
             <div id="prest-active-count" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:50px;font-weight:700;font-size:13px"></div>
           </div>
           ${[
-            {url:'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&fit=crop',nom:'Jean Mbarga',metier:'Électricien'},
-            {url:'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&fit=crop',nom:'Aïcha Nkolo',metier:'Coiffeuse'},
-            {url:'https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?w=400&fit=crop',nom:'Paul Essomba',metier:'Menuisier'},
-            {url:'https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=400&fit=crop',nom:'Fatou Biya',metier:'Traiteur'},
-            {url:'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&fit=crop',nom:'Simon Ateba',metier:'Plombier'},
-          ].map(p=>`<div class="hero-slide">
-            <img src="${p.url}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">
-            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(4,13,26,.75) 40%,transparent 100%)"></div>
-            <div style="position:absolute;bottom:16px;left:18px">
-              <div style="font-size:16px;font-weight:800;color:#fff">${p.nom}</div>
-              <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">🔧 ${p.metier}</div>
-            </div>
-            <div style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);border-radius:50px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff">✓ Vérifié</div>
-          </div>`).join('')}
+            'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=600&fit=crop&auto=format',
+            'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&fit=crop&auto=format',
+            'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&fit=crop&auto=format',
+            'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&fit=crop&auto=format',
+            'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&fit=crop&auto=format',
+          ].map(url=>`<div class="hero-slide"><img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy"></div>`).join('')}
         </div>
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -1881,36 +1877,20 @@ function renderHome(){
 
   updatePrestList();
 
-  // Clear previous timers
+  // Clear previous hero timer
   if(_heroTimer){ clearInterval(_heroTimer); _heroTimer=null; }
-  if(_catScrollTimer){ clearInterval(_catScrollTimer); _catScrollTimer=null; }
   _heroIdx=0;
 
   setTimeout(function(){
-    // Hero carousel
     const carousel = document.getElementById('hero-carousel');
-    if(carousel){
-      const slides = carousel.querySelectorAll('.hero-slide');
-      const total = slides.length;
-      _heroTimer = setInterval(function(){
-        slides[_heroIdx].classList.remove('hs-active');
-        _heroIdx = (_heroIdx+1) % total;
-        slides[_heroIdx].classList.add('hs-active');
-      }, 3000);
-    }
-    // Category auto-scroll
-    const catEl = document.getElementById('cat-scroll');
-    if(catEl){
-      let dir = 1;
-      _catScrollTimer = setInterval(function(){
-        if(!document.getElementById('cat-scroll')){ clearInterval(_catScrollTimer); return; }
-        const maxScroll = catEl.scrollWidth - catEl.clientWidth;
-        if(maxScroll <= 0) return;
-        catEl.scrollLeft += dir * 80;
-        if(catEl.scrollLeft >= maxScroll) dir = -1;
-        if(catEl.scrollLeft <= 0) dir = 1;
-      }, 3000);
-    }
+    if(!carousel) return;
+    const slides = carousel.querySelectorAll('.hero-slide');
+    const total = slides.length;
+    _heroTimer = setInterval(function(){
+      slides[_heroIdx].classList.remove('hs-active');
+      _heroIdx = (_heroIdx+1) % total;
+      slides[_heroIdx].classList.add('hs-active');
+    }, 3000);
   }, 150);
 }
 
