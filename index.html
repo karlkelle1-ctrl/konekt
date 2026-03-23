@@ -2939,8 +2939,9 @@ async function renderAdminVal(){
     <div id="val-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div>
   </div>`);
   try {
-    const snap = await db.collection('users').where('role','==','prestataire').where('verifie','==',false).get();
-    const prests = snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Single where() to avoid requiring a composite Firestore index; filter client-side
+    const snap = await db.collection('users').where('role','==','prestataire').get();
+    const prests = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p=>!p.verifie);
     const el = document.getElementById('val-list');
     if(!el) return;
     if(prests.length===0){
@@ -2982,40 +2983,41 @@ async function validerPrest(id, action){
   }
 }
 
-function renderAdminVerifs(){
+async function renderAdminVerifs(){
   s('<div style="padding:20px 16px 90px;background:var(--bg);min-height:100%"><div style="margin-bottom:20px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Administration</div><h2 style="font-size:22px;font-weight:800;color:var(--text)">Vérifications 🛡️</h2></div><div id="verif-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div></div>');
-  var el = document.getElementById('verif-list');
-  db.collection('users').where('role','==','prestataire').get()
-    .then(function(snap){
-      var prests = snap.docs.map(function(d){ var obj = d.data(); obj.id = d.id; return obj; });
-      window._pendingVerifs = prests;
-      if(!el) return;
-      if(prests.length === 0){
-        el.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:48px">📭</div><div style="margin-top:12px;color:var(--muted)">Aucun prestataire inscrit</div></div>';
-        return;
-      }
-      var html = '<p style="color:var(--muted);font-size:13px;margin-bottom:16px">' + prests.length + ' prestataire(s)</p>';
-      prests.forEach(function(v){
-        var badge = v.verifie ? '✓ Vérifié' : 'En attente';
-        var badgeBg = v.verifie ? 'rgba(26,138,74,.15)' : 'rgba(212,160,23,.15)';
-        var badgeCol = v.verifie ? 'var(--ok)' : 'var(--gold)';
-        html += '<div id="card-' + v.id + '" style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer">';
-        html += '<div style="display:flex;align-items:center;gap:12px">';
-        html += '<div style="width:46px;height:46px;border-radius:12px;background:rgba(91,184,245,.12);display:flex;align-items:center;justify-content:center;font-size:22px">🧑‍🔧</div>';
-        html += '<div style="flex:1"><div style="font-weight:800;font-size:15px;color:var(--text)">' + (v.nom||'Sans nom') + '</div>';
-        html += '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + (v.metier||'Métier non renseigné') + '</div></div>';
-        html += '<div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:' + badgeBg + ';color:' + badgeCol + '">' + badge + '</div>';
-        html += '</div><div style="margin-top:8px;font-size:11px;color:var(--accent);font-weight:600">👁️ Voir le dossier →</div></div>';
-      });
-      el.innerHTML = html;
-      prests.forEach(function(v){
-        var card = document.getElementById('card-' + v.id);
-        if(card) card.addEventListener('click', function(){ showVerifDetail(v.id); });
-      });
-    })
-    .catch(function(e){
-      if(el) el.innerHTML = '<div style="background:rgba(204,34,34,.1);border-radius:12px;padding:16px"><div style="color:var(--err);font-weight:700">Erreur: ' + e.message + '</div></div>';
+  const el = document.getElementById('verif-list');
+  try {
+    const snap = await db.collection('users').where('role','==','prestataire').get();
+    const prests = snap.docs.map(d=>{ const obj=d.data(); obj.id=d.id; return obj; });
+    window._pendingVerifs = prests;
+    if(!el) return;
+    if(prests.length===0){
+      el.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:48px">📭</div><div style="margin-top:12px;color:var(--muted)">Aucun prestataire inscrit</div></div>';
+      return;
+    }
+    let html='<p style="color:var(--muted);font-size:13px;margin-bottom:16px">'+prests.length+' prestataire(s)</p>';
+    prests.forEach(v=>{
+      const badge=v.verifie?'✓ Vérifié':'En attente';
+      const badgeBg=v.verifie?'rgba(26,138,74,.15)':'rgba(212,160,23,.15)';
+      const badgeCol=v.verifie?'var(--ok)':'var(--gold)';
+      html+='<div id="card-'+v.id+'" style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer">';
+      html+='<div style="display:flex;align-items:center;gap:12px">';
+      html+='<div style="width:46px;height:46px;border-radius:12px;background:rgba(91,184,245,.12);display:flex;align-items:center;justify-content:center;font-size:22px">🧑‍🔧</div>';
+      html+='<div style="flex:1"><div style="font-weight:800;font-size:15px;color:var(--text)">'+(v.nom||'Sans nom')+'</div>';
+      html+='<div style="font-size:12px;color:var(--muted);margin-top:2px">'+(v.metier||'Métier non renseigné')+'</div>';
+      html+='<div style="font-size:11px;margin-top:4px"><span style="background:'+(v.photoBase64?'rgba(34,197,94,.15)':'rgba(245,158,11,.15)')+';color:'+(v.photoBase64?'var(--ok)':'var(--warn)')+';padding:2px 7px;border-radius:20px;font-weight:700">'+(v.photoBase64?'🪪 Pièce soumise':'⚠️ Pièce manquante')+'</span></div></div>';
+      html+='<div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:'+badgeBg+';color:'+badgeCol+'">'+badge+'</div>';
+      html+='</div><div style="margin-top:8px;font-size:11px;color:var(--accent);font-weight:600">👁️ Voir le dossier →</div></div>';
     });
+    el.innerHTML=html;
+    prests.forEach(v=>{
+      const card=document.getElementById('card-'+v.id);
+      if(card) card.addEventListener('click',()=>showVerifDetail(v.id));
+    });
+  } catch(e){
+    if(el) el.innerHTML='<div style="background:rgba(204,34,34,.1);border-radius:12px;padding:16px"><div style="color:var(--err);font-weight:700">Erreur: '+e.message+'</div></div>';
+    console.error('renderAdminVerifs:',e);
+  }
 }
 
 function showVerifDetail(id){
