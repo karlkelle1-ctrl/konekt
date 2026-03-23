@@ -1356,35 +1356,65 @@ function renderRegisterScreen(role){
       <div class="input-wrap"><label>${t('phone')}</label><div class="input-field"><input type="tel" id="r-tel" placeholder="+237 6XX XXX XXX"/></div></div>
 
       <div style="background:var(--sand);border-radius:20px;padding:18px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <div style="width:38px;height:38px;border-radius:12px;background:rgba(91,184,245,.15);display:flex;align-items:center;justify-content:center;font-size:20px">🛡️</div>
-          <div>
+          <div style="flex:1">
             <div style="font-weight:800;font-size:14px;color:var(--text)">Vérification d'identité</div>
-            <div style="font-size:11px;color:var(--muted)">Optionnel mais recommandé</div>
+            <div style="font-size:11px;color:var(--muted)">Requise pour créer votre profil</div>
           </div>
-          <div style="margin-left:auto;background:rgba(212,160,23,.15);color:var(--gold);font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px">BADGE ✓</div>
-        </div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">Les prestataires vérifiés obtiennent un badge ✓ sur leur profil et inspirent plus confiance aux clients.</p>
-
-        <div style="display:flex;gap:8px;margin-bottom:14px" id="verif-choice">
-          <button onclick="setVerifMode('numero')" id="vbtn-numero" style="flex:1;padding:10px 8px;border-radius:14px;border:1.5px solid var(--accent);background:rgba(91,184,245,.08);color:var(--accent);font-weight:700;font-size:12px;transition:all .2s">
-            🪪 Numéro CNI
-          </button>
-          <button onclick="setVerifMode('photo')" id="vbtn-photo" style="flex:1;padding:10px 8px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:12px;transition:all .2s">
-            📸 Photo pièce
-          </button>
-          <button onclick="setVerifMode('non')" id="vbtn-non" style="flex:1;padding:10px 8px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:12px;transition:all .2s">
-            ${t('later')}
-          </button>
+          <div style="background:rgba(212,160,23,.15);color:var(--gold);font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px">BADGE ✓</div>
         </div>
 
-        <div id="verif-zone">
-          <div class="input-wrap" style="margin-bottom:0">
-            <label>Numéro de la CNI / Passeport</label>
-            <div class="input-field"><input type="text" id="r-cni" placeholder="Ex: 1234567890123" style="letter-spacing:1px"/></div>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">🔒 Chiffré et sécurisé — jamais partagé</div>
+        <div style="background:rgba(91,184,245,.08);border:1px solid rgba(91,184,245,.25);border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.6">
+          📸 Pour obtenir le badge ✓ Vérifié, soumettez votre pièce ET un selfie. L'admin comparera les deux photos.
         </div>
+
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:16px">
+          <div id="step1-ind" style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--muted)">
+            <span style="width:22px;height:22px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">1</span>Pièce
+          </div>
+          <div style="flex:1;height:1.5px;background:var(--border)"></div>
+          <div id="step2-ind" style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--muted)">
+            <span style="width:22px;height:22px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">2</span>Selfie
+          </div>
+          <div style="flex:1;height:1.5px;background:var(--border)"></div>
+          <div id="step3-ind" style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--muted)">
+            <span style="width:22px;height:22px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">✓</span>Envoyé
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="font-weight:700;font-size:13px;color:var(--text)">1️⃣ Photo de votre pièce d'identité</div>
+            <div style="background:rgba(239,68,68,.15);color:var(--err);font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;flex-shrink:0">Obligatoire</div>
+          </div>
+          <div id="photo-zone" style="border:2px dashed var(--border2);border-radius:14px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--card)"
+            onclick="document.getElementById('r-photo').click()"
+            onmouseenter="this.style.borderColor='var(--accent)'"
+            onmouseleave="this.style.borderColor=window._photoBase64?'var(--ok)':'var(--border2)'">
+            <input type="file" id="r-photo" accept="image/*" capture="environment" style="display:none"
+              onchange="previewPhotoReg(this,'photo-preview','photo-zone','step1-ind')"/>
+            <div id="photo-preview" style="font-size:36px;margin-bottom:6px">📷</div>
+            <div style="font-size:11px;color:var(--muted)">CNI, Passeport ou Permis</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="font-weight:700;font-size:13px;color:var(--text)">2️⃣ Selfie pour confirmer votre identité</div>
+            <div style="background:rgba(91,184,245,.15);color:var(--accent);font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;flex-shrink:0">Pour vérif</div>
+          </div>
+          <div id="selfie-zone" style="border:2px dashed var(--border2);border-radius:14px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--card)"
+            onclick="document.getElementById('r-selfie').click()"
+            onmouseenter="this.style.borderColor='var(--accent)'"
+            onmouseleave="this.style.borderColor=window._selfieBase64?'var(--ok)':'var(--border2)'">
+            <input type="file" id="r-selfie" accept="image/*" capture="user" style="display:none"
+              onchange="previewPhotoReg(this,'selfie-preview','selfie-zone','step2-ind')"/>
+            <div id="selfie-preview" style="font-size:36px;margin-bottom:6px">🤳</div>
+            <div style="font-size:11px;color:var(--muted)">Caméra frontale — visage visible</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">🔒 Photos transmises uniquement à l'équipe KoneKt</div>
       </div>`:``}
 
       <button class="btn btn-primary" id="register-btn" onclick="submitRegister('${role}')" style="margin-top:8px;border-radius:16px;font-size:15px;padding:16px">
@@ -1463,6 +1493,26 @@ async function previewPhoto(input, previewId){
   }
 }
 
+async function previewPhotoReg(input, previewId, zoneId, stepId){
+  await previewPhoto(input, previewId);
+  const zone = document.getElementById(zoneId);
+  const step = document.getElementById(stepId);
+  if(zone) zone.style.borderColor = 'var(--ok)';
+  if(step){
+    step.style.color = 'var(--ok)';
+    const circle = step.querySelector('span');
+    if(circle){ circle.style.background='var(--ok)'; circle.style.color='#fff'; circle.textContent='✓'; }
+  }
+  if(window._photoBase64 && window._selfieBase64){
+    const s3 = document.getElementById('step3-ind');
+    if(s3){
+      s3.style.color='var(--ok)';
+      const c3 = s3.querySelector('span');
+      if(c3){ c3.style.background='var(--ok)'; c3.style.color='#fff'; }
+    }
+  }
+}
+
 async function submitRegister(role){
   const nom=$('r-nom').value.trim();
   const email=$('r-email').value.trim().toLowerCase();
@@ -1479,13 +1529,17 @@ async function submitRegister(role){
     let verifStatut='non_soumis';
     let cni='';
     if(role==='prestataire'){
-      const cniEl=$('r-cni');
-      const photoEl=$('r-photo');
-      if(cniEl && cniEl.value.trim()){
-        cni=cniEl.value.trim();
+      if(!window._photoBase64){
+        const photoZone = document.getElementById('photo-zone');
+        if(photoZone) photoZone.style.borderColor='var(--err)';
+        showToast('La photo de votre pièce d\'identité est obligatoire pour vous inscrire comme prestataire','var(--err)');
+        if(btn){ btn.textContent='Créer mon profil prestataire'; btn.disabled=false; }
+        return;
+      }
+      if(window._photoBase64 && window._selfieBase64){
         verifStatut='en_attente';
-      } else if(photoEl && photoEl.files && photoEl.files[0]){
-        verifStatut='en_attente';
+      } else {
+        verifStatut='incomplet';
       }
       if(window._photoBase64) sessionStorage.setItem('verif_photo_'+email, window._photoBase64);
       if(window._selfieBase64) sessionStorage.setItem('verif_selfie_'+email, window._selfieBase64);
@@ -1514,7 +1568,9 @@ async function submitRegister(role){
     } else if(result.addedRole){
       showToast('✅ Deuxième profil ajouté à cet email');
     } else if(verifStatut==='en_attente'){
-      showToast('✅ Compte créé ! Vérification en cours 🛡️');
+      showToast('✅ Compte créé ! Demande de vérification envoyée 🛡️');
+    } else if(verifStatut==='incomplet'){
+      showToast('✅ Compte créé. Ajoutez un selfie depuis votre profil pour finaliser la vérification.');
     } else {
       showToast(`✅ Bienvenue ${nom} !`);
     }
