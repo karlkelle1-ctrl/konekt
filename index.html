@@ -2865,6 +2865,22 @@ function setAdminTab(t){ adminTab=t; renderAdmin(); }
 
 async function exitAdminMode(){
   STATE._adminMode = false;
+  STATE.screen = 'app';
+  STATE.tab = 'home';
+  // Restaure le HTML original de la nav avant render()
+  $('bottom-nav').innerHTML = `
+    <button class="nav-btn" id="nav-home" onclick="goTab('home')">
+      <span class="nav-icon">🏠</span><span class="nav-lbl">Accueil</span>
+    </button>
+    <button class="nav-btn" id="nav-msgs" onclick="goTab('msgs')">
+      <span class="nav-icon">💬</span><span class="nav-lbl">Messages</span>
+    </button>
+    <button class="nav-btn" id="nav-cmds" onclick="goTab('cmds')">
+      <span class="nav-icon">📦</span><span class="nav-lbl">Commandes</span>
+    </button>
+    <button class="nav-btn" id="nav-profile" onclick="goTab('profile')">
+      <span class="nav-icon">👤</span><span class="nav-lbl">Profil</span>
+    </button>`;
   // Recharge le vrai profil Firestore pour avoir le bon rôle
   try {
     const cu = auth.currentUser;
