@@ -1340,6 +1340,8 @@ async function goRegister(role){
   const cu = auth.currentUser;
   if(!STATE.user || !STATE.user.uid) {
     STATE.user = {role:'admin', nom:'Administrateur', uid: cu ? cu.uid : null, email: cu ? cu.email : null};
+  } else {
+    STATE.user.role = 'admin'; // force le rôle admin quel que soit l'utilisateur connecté
   }
   STATE._adminMode = true;
   STATE.screen = 'app';
