@@ -2849,6 +2849,7 @@ function renderAdmin(){
       <span class="nav-icon">🚨</span><span class="nav-lbl">${APP_LANG==='en'?'Reports':'Signalements'}</span>
       ${signals.length>0?`<div class="nav-badge" style="background:var(--err)">${signals.length}</div>`:''}
     </button>
+    <button class="nav-btn" onclick="exitAdminMode()"><span class="nav-icon">👤</span><span class="nav-lbl">Mon profil</span></button>
     <button class="nav-btn" onclick="logout()"><span class="nav-icon">🚪</span><span class="nav-lbl">Quitter</span></button>`;
   if(t==='home') renderAdminHome().catch(e=>console.error(e));
   else if(t==='users') renderAdminUsers();
@@ -2858,6 +2859,20 @@ function renderAdmin(){
 }
 
 function setAdminTab(t){ adminTab=t; renderAdmin(); }
+
+async function exitAdminMode(){
+  // Recharge le vrai profil Firestore de l'utilisateur connecté
+  try {
+    const cu = auth.currentUser;
+    if(cu){
+      const snap = await db.collection('users').doc(cu.uid).get();
+      if(snap.exists) STATE.user = {uid:cu.uid, ...snap.data()};
+      else STATE.user = {uid:cu.uid, role:'visiteur', nom:cu.email};
+    }
+  } catch(e){ console.error('exitAdminMode:', e); }
+  STATE.tab = 'home';
+  render();
+}
 
 
 function renderAdminUsers(){
@@ -3015,18 +3030,20 @@ async function validerPrest(id, action){
 }
 
 async function renderAdminVerifs(){
-  s('<div style="padding:20px 16px 90px;background:var(--bg);min-height:100%"><div style="margin-bottom:20px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Administration</div><h2 style="font-size:22px;font-weight:800;color:var(--text)">Vérifications 🛡️</h2></div><div id="verif-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div></div>');
+  s('<div style="padding:20px 16px 90px;background:var(--bg);min-height:100%"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px"><div><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Administration</div><h2 style="font-size:22px;font-weight:800;color:var(--text)">Vérifications 🛡️</h2></div><button onclick="nettoyerAnciennesVerifs()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:12px;color:var(--err);font-size:11px;font-weight:700;padding:8px 12px;cursor:pointer">🗑️ Nettoyer</button></div><div id="verif-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div></div>');
   const el = document.getElementById('verif-list');
   try {
     const snap = await db.collection('users').where('role','==','prestataire').get();
-    const prests = snap.docs.map(d=>{ const obj=d.data(); obj.id=d.id; return obj; });
-    window._pendingVerifs = prests;
+    const allPrests = snap.docs.map(d=>{ const obj=d.data(); obj.id=d.id; return obj; });
+    // Ne montrer que ceux avec photoBase64 ET selfieBase64
+    const prests = allPrests.filter(v=>v.photoBase64 && v.selfieBase64);
+    window._pendingVerifs = allPrests; // garder tous pour showVerifDetail
     if(!el) return;
     if(prests.length===0){
-      el.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:48px">📭</div><div style="margin-top:12px;color:var(--muted)">Aucun prestataire inscrit</div></div>';
+      el.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:48px">📭</div><div style="margin-top:12px;color:var(--muted)">Aucun dossier complet à vérifier</div><div style="font-size:12px;color:var(--muted);margin-top:8px">Les dossiers sans pièce + selfie sont masqués</div></div>';
       return;
     }
-    let html='<p style="color:var(--muted);font-size:13px;margin-bottom:16px">'+prests.length+' prestataire(s)</p>';
+    let html='<p style="color:var(--muted);font-size:13px;margin-bottom:16px">'+prests.length+' dossier(s) complet(s) · '+(allPrests.length-prests.length)+' incomplet(s) masqué(s)</p>';
     prests.forEach(v=>{
       const badge=v.verifie?'✓ Vérifié':'En attente';
       const badgeBg=v.verifie?'rgba(26,138,74,.15)':'rgba(212,160,23,.15)';
@@ -3036,7 +3053,7 @@ async function renderAdminVerifs(){
       html+='<div style="width:46px;height:46px;border-radius:12px;background:rgba(91,184,245,.12);display:flex;align-items:center;justify-content:center;font-size:22px">🧑‍🔧</div>';
       html+='<div style="flex:1"><div style="font-weight:800;font-size:15px;color:var(--text)">'+(v.nom||'Sans nom')+'</div>';
       html+='<div style="font-size:12px;color:var(--muted);margin-top:2px">'+(v.metier||'Métier non renseigné')+'</div>';
-      html+='<div style="font-size:11px;margin-top:4px"><span style="background:'+(v.photoBase64?'rgba(34,197,94,.15)':'rgba(245,158,11,.15)')+';color:'+(v.photoBase64?'var(--ok)':'var(--warn)')+';padding:2px 7px;border-radius:20px;font-weight:700">'+(v.photoBase64?'🪪 Pièce soumise':'⚠️ Pièce manquante')+'</span></div></div>';
+      html+='<div style="font-size:11px;margin-top:4px;display:flex;gap:6px"><span style="background:rgba(34,197,94,.15);color:var(--ok);padding:2px 7px;border-radius:20px;font-weight:700">🪪 Pièce</span><span style="background:rgba(34,197,94,.15);color:var(--ok);padding:2px 7px;border-radius:20px;font-weight:700">🤳 Selfie</span></div></div>';
       html+='<div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:'+badgeBg+';color:'+badgeCol+'">'+badge+'</div>';
       html+='</div><div style="margin-top:8px;font-size:11px;color:var(--accent);font-weight:600">👁️ Voir le dossier →</div></div>';
     });
@@ -3049,6 +3066,36 @@ async function renderAdminVerifs(){
     if(el) el.innerHTML='<div style="background:rgba(204,34,34,.1);border-radius:12px;padding:16px"><div style="color:var(--err);font-weight:700">Erreur: '+e.message+'</div></div>';
     console.error('renderAdminVerifs:',e);
   }
+}
+
+async function nettoyerAnciennesVerifs(){
+  if(!confirm('Nettoyer :\n• Les docs "verifications" sans photo/selfie\n• Remettre à "incomplet" les prestataires sans pièce\n\nContinuer ?')) return;
+  let cleaned=0;
+  try {
+    // 1. Supprimer les docs 'verifications' sans photos
+    const vSnap = await db.collection('verifications').get();
+    const batch1 = db.batch();
+    vSnap.docs.forEach(d=>{
+      const data=d.data();
+      if(!data.photoBase64 || !data.selfieBase64){ batch1.delete(d.ref); cleaned++; }
+    });
+    if(cleaned>0) await batch1.commit();
+
+    // 2. Remettre verifStatut='incomplet' pour les prestataires sans photoBase64
+    const uSnap = await db.collection('users').where('role','==','prestataire').where('verifStatut','==','en_attente').get();
+    const batch2 = db.batch();
+    let fixed=0;
+    uSnap.docs.forEach(d=>{
+      if(!d.data().photoBase64){ batch2.update(d.ref,{verifStatut:'incomplet'}); fixed++; }
+    });
+    if(fixed>0) await batch2.commit();
+
+    showToast(`🗑️ ${cleaned} vérification(s) supprimée(s), ${fixed} statut(s) corrigé(s).`);
+  } catch(e){
+    showToast('Erreur: '+e.message,'var(--err)');
+    console.error('nettoyerAnciennesVerifs:',e);
+  }
+  renderAdminVerifs();
 }
 
 function showVerifDetail(id){
