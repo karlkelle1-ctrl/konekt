@@ -15,9 +15,11 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isAuth() && (request.auth.uid == userId || resource.data.get('role','') == 'prestataire');
+      allow read: if isAdmin()
+                  || (isAuth() && (request.auth.uid == userId || resource.data.get('role','') == 'prestataire'));
       allow create: if isAuth() && request.auth.uid == userId;
-      allow update: if isAuth() && request.auth.uid == userId;
+      allow update: if isAdmin() || (isAuth() && request.auth.uid == userId);
+      allow delete: if isAdmin();
     }
 
     match /verifications/{docId} {
@@ -31,11 +33,14 @@ service cloud.firestore {
     }
 
     match /commandes/{cmdId} {
-      allow read, write: if isAuth() && (
-        resource == null ||
-        request.auth.uid == resource.data.clientUid ||
-        request.auth.uid == resource.data.prestataireUid
-      );
+      allow read: if isAdmin()
+                  || (isAuth() && (resource == null
+                      || request.auth.uid == resource.data.clientUid
+                      || request.auth.uid == resource.data.prestataireUid));
+      allow write: if isAdmin()
+                   || (isAuth() && (resource == null
+                       || request.auth.uid == resource.data.clientUid
+                       || request.auth.uid == resource.data.prestataireUid));
     }
 
     match /conversations/{convId} {

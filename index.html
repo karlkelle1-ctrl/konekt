@@ -2901,18 +2901,18 @@ async function renderAdminHome(){
     <div id="admin-home-actions"><div style="text-align:center;padding:20px;color:var(--muted)">Chargement...</div></div>
   </div>`);
   try {
-    const [usersSnap, commandesSnap, sigsSnap] = await Promise.all([
-      db.collection('users').get(),
+    const [prestsSnap, visitorsSnap, commandesSnap, sigsSnap] = await Promise.all([
+      db.collection('users').where('role','==','prestataire').get(),
+      db.collection('users').where('role','==','visiteur').get(),
       db.collection('commandes').get().catch(()=>({size:0,docs:[]})),
       db.collection('signalements').get().catch(()=>({size:0,docs:[]}))
     ]);
-    const allUsers = usersSnap.docs.map(d=>d.data());
-    const totalUsers = usersSnap.size;
-    const nbPrests = allUsers.filter(u=>u.role==='prestataire').length;
-    const nbVisitors = allUsers.filter(u=>u.role==='visiteur').length;
+    const nbPrests = prestsSnap.size;
+    const nbVisitors = visitorsSnap.size;
+    const totalUsers = nbPrests + nbVisitors;
     const nbCommandes = commandesSnap.size;
     const nbSigs = sigsSnap.size;
-    const nbPending = allUsers.filter(u=>u.role==='prestataire' && !u.verifie).length;
+    const nbPending = prestsSnap.docs.filter(d=>!d.data().verifie).length;
     const stats=[
       {l:"Utilisateurs",v:totalUsers,d:"inscrits",i:"👤",c:"var(--teal)"},
       {l:"Prestataires",v:nbPrests,d:"enregistrés",i:"🔧",c:"var(--accent)"},
