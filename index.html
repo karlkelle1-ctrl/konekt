@@ -486,7 +486,7 @@ function loadPrestatairesRealtime(){
       .map(function(doc){ return { id: doc.id, ...(doc.data() || {}) }; })
       .map(function(u){ return normalizePrest(u.id, u); });
     if(STATE.screen==='app' && STATE.tab==='home' && !STATE.selPrest){ renderHome(); }
-    if(STATE.screen==='app' && STATE.tab==='profile' && STATE.user && STATE.user.role==='admin'){ renderProfile(); }
+    if(STATE.screen==='app' && STATE.tab==='profile' && STATE.user && STATE._adminMode){ renderAdmin(); }
   }, function(err){
     console.error('PRESTS snapshot error', err);
     PRESTS = [];
@@ -522,7 +522,7 @@ function loadConvsRealtime(){
     LAST_UNREAD_TOTAL = unreadTotal;
     MSG_INIT_DONE = true;
     if(STATE.screen==='app' && STATE.tab==='msgs' && !selConvId){ renderMsgList(); }
-    if(STATE.screen==='app' && STATE.user && STATE.user.role!=='admin'){ setNav(true, STATE.tab); }
+    if(STATE.screen==='app' && STATE.user && !STATE._adminMode){ setNav(true, STATE.tab); }
   }, function(err){
     console.error('CONVS snapshot error', err);
     CONVS = [];
@@ -541,7 +541,7 @@ function loadCmdsRealtime(){
     LAST_ACTIVE_CMD_TOTAL = activeTotal;
     CMD_INIT_DONE = true;
     if(STATE.screen==='app' && STATE.tab==='cmds' && !selCmdId){ renderCmdList(); }
-    if(STATE.screen==='app' && STATE.user && STATE.user.role!=='admin'){ setNav(true, STATE.tab); }
+    if(STATE.screen==='app' && STATE.user && !STATE._adminMode){ setNav(true, STATE.tab); }
   }, function(err){
     console.error('CMDS snapshot error', err);
     CMDS = [];
@@ -1323,9 +1323,13 @@ async function goRegister(role){
   }
   // Admin → connexion directe après PIN
   const cu = auth.currentUser;
-  STATE.user = {role:'admin', nom:'Administrateur', uid: cu ? cu.uid : null, email: cu ? cu.email : null};
-  STATE.screen='app';
-  STATE.tab='admin';
+  if(!STATE.user || !STATE.user.uid) {
+    STATE.user = {role:'admin', nom:'Administrateur', uid: cu ? cu.uid : null, email: cu ? cu.email : null};
+  }
+  STATE._adminMode = true;
+  STATE.screen = 'app';
+  STATE.tab = 'admin';
+  adminTab = 'home';
   render();
 }
 
@@ -1701,7 +1705,7 @@ async function doLogin(){
 // ══════════════════════════════════════════════
 function renderApp(){
   const t=STATE.tab;
-  const isAdmin=STATE.user&&STATE.user.role==='admin';
+  const isAdmin = STATE._adminMode === true;
 
   if(isAdmin){
     // Admin has its own nav inside
@@ -1818,7 +1822,10 @@ function renderHome(){
             <div style="font-size:22px;font-weight:800;letter-spacing:-.5px"><span style="color:#1A8A4A">K</span>one<span style="color:#5BB8F5">K</span>t</div>
             <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.5px">📍 ${USER_GEO ? t('around_you') : t('all_cameroon')}</div>
           </div>
-          <button onclick="showToast(t('notif_soon'))" style="width:48px;height:48px;border:none;border-radius:16px;background:var(--card);font-size:22px">🔔</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${auth.currentUser && auth.currentUser.uid==='dVIZfTFEbjghmtgKThnzQIBc1dJ3' ? `<button onclick="enterAdminMode()" style="height:36px;padding:0 12px;border:none;border-radius:12px;background:rgba(255,107,43,.15);color:#FF6B2B;font-size:11px;font-weight:800">🛡️ Admin</button>` : ''}
+            <button onclick="showToast(t('notif_soon'))" style="width:48px;height:48px;border:none;border-radius:16px;background:var(--card);font-size:22px">🔔</button>
+          </div>
         </div>
 
         <div class="input-field" style="margin-bottom:12px">
@@ -2849,7 +2856,7 @@ function renderAdmin(){
       <span class="nav-icon">🚨</span><span class="nav-lbl">${APP_LANG==='en'?'Reports':'Signalements'}</span>
       ${signals.length>0?`<div class="nav-badge" style="background:var(--err)">${signals.length}</div>`:''}
     </button>
-    <button class="nav-btn" onclick="exitAdminMode()"><span class="nav-icon">👤</span><span class="nav-lbl">Mon profil</span></button>
+    <button class="nav-btn" onclick="exitAdminMode()"><span class="nav-icon">👁️</span><span class="nav-lbl">Visiteur</span></button>
     <button class="nav-btn" onclick="logout()"><span class="nav-icon">🚪</span><span class="nav-lbl">Quitter</span></button>`;
   if(t==='home') renderAdminHome().catch(e=>console.error(e));
   else if(t==='users') renderAdminUsers();
@@ -2861,7 +2868,8 @@ function renderAdmin(){
 function setAdminTab(t){ adminTab=t; renderAdmin(); }
 
 async function exitAdminMode(){
-  // Recharge le vrai profil Firestore de l'utilisateur connecté
+  STATE._adminMode = false;
+  // Recharge le vrai profil Firestore pour avoir le bon rôle
   try {
     const cu = auth.currentUser;
     if(cu){
@@ -2871,6 +2879,14 @@ async function exitAdminMode(){
     }
   } catch(e){ console.error('exitAdminMode:', e); }
   STATE.tab = 'home';
+  render();
+}
+
+function enterAdminMode(){
+  STATE._adminMode = true;
+  if(STATE.user && !STATE.user.uid && auth.currentUser) STATE.user.uid = auth.currentUser.uid;
+  STATE.tab = 'admin';
+  adminTab = 'home';
   render();
 }
 
