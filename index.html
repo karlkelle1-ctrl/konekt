@@ -1822,10 +1822,7 @@ function renderHome(){
             <div style="font-size:22px;font-weight:800;letter-spacing:-.5px"><span style="color:#1A8A4A">K</span>one<span style="color:#5BB8F5">K</span>t</div>
             <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.5px">📍 ${USER_GEO ? t('around_you') : t('all_cameroon')}</div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            ${auth.currentUser && auth.currentUser.uid==='dVIZfTFEbjghmtgKThnzQIBc1dJ3' ? `<button onclick="enterAdminMode()" style="height:36px;padding:0 12px;border:none;border-radius:12px;background:rgba(255,107,43,.15);color:#FF6B2B;font-size:11px;font-weight:800">🛡️ Admin</button>` : ''}
-            <button onclick="showToast(t('notif_soon'))" style="width:48px;height:48px;border:none;border-radius:16px;background:var(--card);font-size:22px">🔔</button>
-          </div>
+          <button onclick="showToast(t('notif_soon'))" style="width:48px;height:48px;border:none;border-radius:16px;background:var(--card);font-size:22px">🔔</button>
         </div>
 
         <div class="input-field" style="margin-bottom:12px">
@@ -2856,7 +2853,6 @@ function renderAdmin(){
       <span class="nav-icon">🚨</span><span class="nav-lbl">${APP_LANG==='en'?'Reports':'Signalements'}</span>
       ${signals.length>0?`<div class="nav-badge" style="background:var(--err)">${signals.length}</div>`:''}
     </button>
-    <button class="nav-btn" onclick="exitAdminMode()"><span class="nav-icon">👁️</span><span class="nav-lbl">Visiteur</span></button>
     <button class="nav-btn" onclick="logout()"><span class="nav-icon">🚪</span><span class="nav-lbl">Quitter</span></button>`;
   if(t==='home') renderAdminHome().catch(e=>console.error(e));
   else if(t==='users') renderAdminUsers();
@@ -2939,7 +2935,7 @@ async function renderAdminHome(){
   s(`<div style="padding:18px 14px 80px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
       <div><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase">Administration</div><div style="font-size:19px;font-weight:800"><span style="color:#1A8A4A">K</span>one<span style="color:#5BB8F5">K</span>t</div></div>
-      <div style="width:38px;height:38px;border-radius:11px;background:#FF6B2B22;border:1.5px solid #FF6B2B44;display:flex;align-items:center;justify-content:center;font-size:19px">🛡️</div>
+      <button onclick="exitAdminMode()" style="display:flex;align-items:center;gap:6px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer">👤 <span>Mode visiteur</span></button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:20px" id="admin-stats-grid">
       ${[0,1,2,3].map(()=>'<div style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:16px;text-align:center;color:var(--muted)">⏳</div>').join('')}
