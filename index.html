@@ -408,7 +408,7 @@ function normalizePrest(uid, data){
     unite: safeText(data.unite, 'service'),
     tags: tags.length ? tags : [metier, ville].filter(Boolean).slice(0,2),
     online: data.online === true,
-    dispo: (typeof data.online === 'boolean') ? data.online : (data.dispo !== false),
+    dispo: data.online === true,
     verifie: data.verifStatut === 'valide' || data.verifie === true,
     emoji,
     couleur: color,
@@ -566,6 +566,15 @@ function loadProductsRealtime(){
 
 function startRealtime(){
   ensureNotificationPermission();
+  // Reset stale online flags from previous sessions
+  db.collection('users').where('role','==','prestataire').where('online','==',true).get()
+    .then(function(snap){
+      const batch = db.batch();
+      snap.docs.forEach(function(doc){
+        if(!STATE.user || doc.id !== STATE.user.uid) batch.update(doc.ref, {online:false});
+      });
+      return batch.commit();
+    }).catch(function(){});
   loadPrestatairesRealtime();
   loadProductsRealtime();
   if(STATE.user && STATE.user.uid){
