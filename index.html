@@ -1666,6 +1666,94 @@ function closePin(){ const m=$('pin-modal'); if(m) m.remove(); }
 // ══════════════════════════════════════════════
 //  LOGIN
 // ══════════════════════════════════════════════
+function renderCompleteProfile(){
+  setNav(false);
+  let photoB64='', selfieB64='';
+  s(`<div style="min-height:100%;background:var(--bg);padding:28px 20px;display:flex;flex-direction:column">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:36px;margin-bottom:8px">🪪</div>
+      <div style="font-size:20px;font-weight:800">Complète ton profil</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5">Pour accéder à KoneKt, tu dois soumettre ta pièce d'identité. C'est obligatoire pour les prestataires.</div>
+    </div>
+    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px">
+      <div style="font-weight:700;margin-bottom:10px">📄 Pièce d'identité <span style="color:var(--err);font-size:11px;font-weight:800">Obligatoire</span></div>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--sand);border-radius:12px;padding:12px">
+        <span style="font-size:22px">📷</span>
+        <span id="cp-photo-lbl" style="font-size:13px;color:var(--muted)">Choisir une photo</span>
+        <input type="file" accept="image/*" style="display:none" onchange="cpPhotoChange(this)">
+      </label>
+      <div id="cp-photo-preview" style="margin-top:8px;display:none"><img id="cp-photo-img" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px"></div>
+    </div>
+    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:20px">
+      <div style="font-weight:700;margin-bottom:10px">🤳 Selfie avec la pièce <span style="color:#5BB8F5;font-size:11px;font-weight:800">Recommandé</span></div>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--sand);border-radius:12px;padding:12px">
+        <span style="font-size:22px">🤳</span>
+        <span id="cp-selfie-lbl" style="font-size:13px;color:var(--muted)">Choisir un selfie</span>
+        <input type="file" accept="image/*" style="display:none" onchange="cpSelfieChange(this)">
+      </label>
+      <div id="cp-selfie-preview" style="margin-top:8px;display:none"><img id="cp-selfie-img" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px"></div>
+    </div>
+    <button id="cp-submit-btn" onclick="submitCompleteProfile()" style="width:100%;padding:16px;border-radius:16px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:800;cursor:pointer">Soumettre</button>
+    <button onclick="logout()" style="width:100%;padding:12px;border-radius:16px;border:none;background:transparent;color:var(--muted);font-size:13px;margin-top:8px;cursor:pointer">Se déconnecter</button>
+  </div>`);
+
+  window._cpPhoto = ''; window._cpSelfie = '';
+}
+
+window.cpPhotoChange = function(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    window._cpPhoto = e.target.result;
+    const lbl = document.getElementById('cp-photo-lbl');
+    const prev = document.getElementById('cp-photo-preview');
+    const img = document.getElementById('cp-photo-img');
+    if(lbl) lbl.textContent = file.name;
+    if(img) img.src = e.target.result;
+    if(prev) prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+};
+
+window.cpSelfieChange = function(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    window._cpSelfie = e.target.result;
+    const lbl = document.getElementById('cp-selfie-lbl');
+    const prev = document.getElementById('cp-selfie-preview');
+    const img = document.getElementById('cp-selfie-img');
+    if(lbl) lbl.textContent = file.name;
+    if(img) img.src = e.target.result;
+    if(prev) prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+};
+
+async function submitCompleteProfile(){
+  if(!window._cpPhoto){ showToast('La pièce d\'identité est obligatoire.','var(--err)'); return; }
+  const btn = document.getElementById('cp-submit-btn');
+  if(btn){ btn.textContent = 'Envoi...'; btn.disabled = true; }
+  try {
+    const verifStatut = window._cpSelfie ? 'en_attente' : 'incomplet';
+    await db.collection('users').doc(STATE.user.uid).update({
+      photoBase64: window._cpPhoto,
+      selfieBase64: window._cpSelfie || '',
+      verifStatut
+    });
+    STATE.user.photoBase64 = window._cpPhoto;
+    STATE.user.selfieBase64 = window._cpSelfie || '';
+    STATE.user.verifStatut = verifStatut;
+    showToast('Dossier soumis ✓');
+    STATE.screen = 'app';
+    STATE.tab = 'profile';
+    render();
+  } catch(e){
+    showToast('Erreur: '+e.message,'var(--err)');
+    if(btn){ btn.textContent = 'Soumettre'; btn.disabled = false; }
+  }
+}
+
 function renderLogin(){
   setNav(false);
   s(`<div id="login-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:32px 24px;background:var(--bg);position:relative;overflow:hidden">
@@ -1695,6 +1783,13 @@ async function doLogin(){
     const user = await window.FB.fbLogin(email, pass);
     STATE.user = user;
     try{ await db.collection('users').doc(user.uid).set({ online:true }, { merge:true }); }catch(e){}
+    // Prestataire sans pièce d'identité → écran de complétion obligatoire
+    if(user.role === 'prestataire' && !user.photoBase64){
+      STATE.screen = 'complete-profile';
+      startRealtime();
+      renderCompleteProfile();
+      return;
+    }
     STATE.screen='app';
     STATE.tab = user.role==='admin' ? 'admin' : (user.role==='prestataire' ? 'profile' : 'home');
     startRealtime();
@@ -2881,6 +2976,12 @@ async function logout(){
   STATE.user = null;
   STATE.tab = 'home';
   STATE.screen = 'welcome';
+  const nav = document.getElementById('bottom-nav');
+  if(nav) nav.innerHTML = `
+    <button class="nav-btn active" id="nav-home" onclick="goTab('home')"><span class="nav-icon">🏠</span><span class="nav-lbl">Accueil</span></button>
+    <button class="nav-btn" id="nav-msgs" onclick="goTab('msgs')"><span class="nav-icon">💬</span><span class="nav-lbl">Messages</span></button>
+    <button class="nav-btn" id="nav-cmds" onclick="goTab('cmds')"><span class="nav-icon">📦</span><span class="nav-lbl">Commandes</span></button>
+    <button class="nav-btn" id="nav-profile" onclick="goTab('profile')"><span class="nav-icon">👤</span><span class="nav-lbl">Profil</span></button>`;
   render();
 }
 
