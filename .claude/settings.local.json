@@ -9,7 +9,9 @@
       "Bash(npx firebase:*)",
       "Bash(npm --version)",
       "Bash(npm install:*)",
-      "Bash(firebase:*)"
+      "Bash(firebase:*)",
+      "Bash(git reflog:*)",
+      "Bash(git gc:*)"
     ]
   }
 }
