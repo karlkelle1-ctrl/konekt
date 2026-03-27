@@ -2791,37 +2791,69 @@ function editProfile(){
   document.body.appendChild(modal);
   document.getElementById('edit-back').addEventListener('click', function(){ modal.remove(); });
   document.getElementById('ep-photo-btn').addEventListener('click', function(){ document.getElementById('ep-photo').click(); });
-  document.getElementById('ep-photo').addEventListener('change', function(ev){
+  document.getElementById('ep-photo').addEventListener('change', async function(ev){
     var file = (ev.target.files||[])[0];
     if(!file) return;
     if(!file.type || file.type.indexOf('image/')!==0){ showToast('Choisis une image','var(--err)'); return; }
-    var reader = new FileReader();
-    reader.onload = function(e){
-      currentPhoto = e.target.result;
-      var prev = document.getElementById('ep-photo-preview');
+    var prev = document.getElementById('ep-photo-preview');
+    var btn = document.getElementById('ep-photo-btn');
+    if(prev) prev.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:13px">⏳ Compression...</div>';
+    if(btn) btn.disabled = true;
+    try {
+      var compressed = await compressImageFile(file, { maxWidth:400, maxHeight:400, targetBytes:150000, minQuality:0.3 });
+      if(compressed.length > 200000){
+        var imgEl = await new Promise(function(res,rej){ var i=new Image(); i.onload=function(){res(i);}; i.onerror=rej; i.src=compressed; });
+        var c2 = document.createElement('canvas');
+        c2.width = Math.min(200, imgEl.width);
+        c2.height = Math.round(imgEl.height * c2.width / imgEl.width);
+        c2.getContext('2d').drawImage(imgEl, 0, 0, c2.width, c2.height);
+        var q = 0.5; var out = c2.toDataURL('image/jpeg', q);
+        while(out.length > 200000 && q > 0.2){ q -= 0.07; out = c2.toDataURL('image/jpeg', q); }
+        compressed = out;
+      }
+      currentPhoto = compressed;
       if(prev) prev.innerHTML = '<img src="' + currentPhoto + '" style="width:110px;height:110px;object-fit:cover;border-radius:20px;border:1px solid var(--border)"/>';
-    };
-    reader.readAsDataURL(file);
+    } catch(e) {
+      showToast('Impossible de traiter cette image.','var(--err)');
+      if(prev) prev.innerHTML = '';
+    }
+    if(btn) btn.disabled = false;
   });
-  document.getElementById('ep-save').addEventListener('click', function(){
+  document.getElementById('ep-save').addEventListener('click', async function(){
     var nom = document.getElementById('ep-nom').value.trim();
     if(!nom){ showToast('Le nom est obligatoire','var(--err)'); return; }
-    var updates = { nom: nom, photoURL: currentPhoto || '' };
-    if(u.role==='prestataire'){
-      updates.metier = (document.getElementById('ep-metier')||{}).value||u.metier||'';
-      updates.ville = (document.getElementById('ep-ville')||{}).value||u.ville||'';
-      updates.tel = (document.getElementById('ep-tel')||{}).value||u.tel||'';
-      updates.bio = (document.getElementById('ep-bio')||{}).value||u.bio||'';
-    }
-    db.collection('users').doc(u.uid).set(updates, { merge:true }).then(function(){
+    var saveBtn = document.getElementById('ep-save');
+    if(saveBtn){ saveBtn.textContent = 'Enregistrement...'; saveBtn.disabled = true; }
+    try {
+      var photo = currentPhoto || '';
+      if(photo && photo.length > 200000){
+        showToast('Image trop grande, compression supplémentaire...','var(--warn)');
+        var imgEl2 = await new Promise(function(res,rej){ var i=new Image(); i.onload=function(){res(i);}; i.onerror=rej; i.src=photo; });
+        var c3 = document.createElement('canvas');
+        c3.width = Math.min(200, imgEl2.width);
+        c3.height = Math.round(imgEl2.height * c3.width / imgEl2.width);
+        c3.getContext('2d').drawImage(imgEl2, 0, 0, c3.width, c3.height);
+        var q2 = 0.5; var out2 = c3.toDataURL('image/jpeg', q2);
+        while(out2.length > 200000 && q2 > 0.15){ q2 -= 0.07; out2 = c3.toDataURL('image/jpeg', q2); }
+        photo = out2;
+      }
+      var updates = { nom: nom, photoURL: photo };
+      if(u.role==='prestataire'){
+        updates.metier = (document.getElementById('ep-metier')||{}).value||u.metier||'';
+        updates.ville = (document.getElementById('ep-ville')||{}).value||u.ville||'';
+        updates.tel = (document.getElementById('ep-tel')||{}).value||u.tel||'';
+        updates.bio = (document.getElementById('ep-bio')||{}).value||u.bio||'';
+      }
+      await db.collection('users').doc(u.uid).set(updates, { merge:true });
       Object.assign(STATE.user, updates);
       PRESTS = PRESTS.map(function(p){ return String(p.id)===String(u.uid) ? Object.assign({}, p, updates) : p; });
       showToast(APP_LANG==='en' ? 'Profile updated' : 'Profil mis à jour');
       modal.remove();
       renderProfile();
-    }).catch(function(e){
+    } catch(e) {
       showToast('Erreur: ' + e.message,'var(--err)');
-    });
+      if(saveBtn){ saveBtn.textContent = t('save'); saveBtn.disabled = false; }
+    }
   });
 }
 
