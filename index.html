@@ -1421,7 +1421,7 @@ function renderRegisterScreen(role){
           <div id="photo-zone" style="border:2px dashed var(--border2);border-radius:14px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--card)"
             onclick="document.getElementById('r-photo').click()"
             onmouseenter="this.style.borderColor='var(--accent)'"
-            onmouseleave="this.style.borderColor=window._photoBase64?'var(--ok)':'var(--border2)'">
+            onmouseleave="this.style.borderColor=window._idPhotoBase64?'var(--ok)':'var(--border2)'">
             <input type="file" id="r-photo" accept="image/*" capture="environment" style="display:none"
               onchange="previewPhotoReg(this,'photo-preview','photo-zone','step1-ind')"/>
             <div id="photo-preview" style="font-size:36px;margin-bottom:6px">📷</div>
@@ -1528,7 +1528,7 @@ async function previewPhoto(input, previewId){
         compressed = out;
       }
       if(prev) prev.innerHTML = `<img src="${compressed}" style="width:80px;height:80px;object-fit:cover;border-radius:10px;margin-bottom:4px"/>`;
-      if(previewId==='photo-preview') window._photoBase64 = compressed;
+      if(previewId==='photo-preview') window._idPhotoBase64 = compressed;
       if(previewId==='selfie-preview') window._selfieBase64 = compressed;
     }catch(err){
       showToast('Image impossible à traiter','var(--err)');
@@ -1548,7 +1548,7 @@ async function previewPhotoReg(input, previewId, zoneId, stepId){
     const circle = step.querySelector('span');
     if(circle){ circle.style.background='var(--ok)'; circle.style.color='#fff'; circle.textContent='✓'; }
   }
-  if(window._photoBase64 && window._selfieBase64){
+  if(window._idPhotoBase64 && window._selfieBase64){
     const s3 = document.getElementById('step3-ind');
     if(s3){
       s3.style.color='var(--ok)';
@@ -1574,28 +1574,28 @@ async function submitRegister(role){
     let verifStatut='non_soumis';
     let cni='';
     if(role==='prestataire'){
-      if(!window._photoBase64){
+      if(!window._idPhotoBase64){
         const photoZone = document.getElementById('photo-zone');
         if(photoZone) photoZone.style.borderColor='var(--err)';
         showToast('La photo de votre pièce d\'identité est obligatoire pour vous inscrire comme prestataire','var(--err)');
         if(btn){ btn.textContent='Créer mon profil prestataire'; btn.disabled=false; }
         return;
       }
-      if(window._photoBase64 && window._selfieBase64){
+      if(window._idPhotoBase64 && window._selfieBase64){
         verifStatut='en_attente';
       } else {
         verifStatut='incomplet';
       }
-      if(window._photoBase64) sessionStorage.setItem('verif_photo_'+email, window._photoBase64);
+      if(window._idPhotoBase64) sessionStorage.setItem('verif_photo_'+email, window._idPhotoBase64);
       if(window._selfieBase64) sessionStorage.setItem('verif_selfie_'+email, window._selfieBase64);
     }
 
     const result = await window.FB.fbRegister(email, pass, role, nom, {
       metier, ville, tel, cni, verifStatut,
-      photoBase64: window._photoBase64||'',
+      idPhotoBase64: window._idPhotoBase64||'',
       selfieBase64: window._selfieBase64||''
     });
-    window._photoBase64 = null;
+    window._idPhotoBase64 = null;
     window._selfieBase64 = null;
 
     await sendVerificationEmailIfNeeded();
@@ -1795,11 +1795,11 @@ async function submitCompleteProfile(){
   try {
     const verifStatut = window._cpSelfie ? 'en_attente' : 'incomplet';
     await db.collection('users').doc(STATE.user.uid).update({
-      photoBase64: window._cpPhoto,
+      idPhotoBase64: window._cpPhoto,
       selfieBase64: window._cpSelfie || '',
       verifStatut
     });
-    STATE.user.photoBase64 = window._cpPhoto;
+    STATE.user.idPhotoBase64 = window._cpPhoto;
     STATE.user.selfieBase64 = window._cpSelfie || '';
     STATE.user.verifStatut = verifStatut;
     showToast('Dossier soumis ✓');
