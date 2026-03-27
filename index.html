@@ -1218,15 +1218,23 @@ function showToast(msg, color='#22C55E'){
 function setNav(show, active){
   const nav=$('bottom-nav');
   nav.className=show?'show':'';
-  ['home','msgs','cmds','profile','admin'].forEach(k=>{
-    const b=$('nav-'+k);
-    if(b) b.className='nav-btn'+(k===active?' active':'');
-  });
-  const labels = {home:t('home'), msgs:t('msgs'), cmds:t('cmds'), profile:t('profile')};
-  Object.keys(labels).forEach(function(k){
-    const el = document.querySelector('#nav-'+k+' .nav-lbl');
-    if(el) el.textContent = labels[k];
-  });
+  const isPrest = STATE.user && STATE.user.role === 'prestataire';
+  // Rebuild nav HTML to match role
+  if(show){
+    if(isPrest){
+      nav.innerHTML=`
+        <button class="nav-btn${active==='home'?' active':''}" id="nav-home" onclick="goTab('home')"><span class="nav-icon">🔧</span><span class="nav-lbl">Gestion</span></button>
+        <button class="nav-btn${active==='msgs'?' active':''}" id="nav-msgs" onclick="goTab('msgs')"><span class="nav-icon">💬</span><span class="nav-lbl">Messages</span></button>
+        <button class="nav-btn${active==='cmds'?' active':''}" id="nav-cmds" onclick="goTab('cmds')"><span class="nav-icon">📦</span><span class="nav-lbl">Commandes</span></button>
+        <button class="nav-btn${active==='profile'?' active':''}" id="nav-profile" onclick="goTab('profile')"><span class="nav-icon">👤</span><span class="nav-lbl">Profil</span></button>`;
+    } else {
+      nav.innerHTML=`
+        <button class="nav-btn${active==='home'?' active':''}" id="nav-home" onclick="goTab('home')"><span class="nav-icon">🏠</span><span class="nav-lbl">Accueil</span></button>
+        <button class="nav-btn${active==='msgs'?' active':''}" id="nav-msgs" onclick="goTab('msgs')"><span class="nav-icon">💬</span><span class="nav-lbl">Messages</span></button>
+        <button class="nav-btn${active==='cmds'?' active':''}" id="nav-cmds" onclick="goTab('cmds')"><span class="nav-icon">📦</span><span class="nav-lbl">Commandes</span></button>
+        <button class="nav-btn${active==='profile'?' active':''}" id="nav-profile" onclick="goTab('profile')"><span class="nav-icon">👤</span><span class="nav-lbl">Profil</span></button>`;
+    }
+  }
 }
 
 function render(){
