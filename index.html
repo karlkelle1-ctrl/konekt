@@ -612,7 +612,7 @@ function pushAppNotification(title, body){
 }
 let newOrderStep=0, newOrderForm={prestId:null,service:"",adresse:"",date:"",heure:"08:00",duree:1};
 let CART=[]; let selectedProductItem=null;
-let reviewNote=0, reviewComment="", adminTab="home";
+let reviewNote=0, reviewComment="", adminTab="home", verifTab="pending";
 let pendingPrests=[
   {id:"P001",nom:"Félix Ondoa",metier:"Menuisier",ville:"Douala",emoji:"🪚",couleur:"#FB923C",hasId:true},
   {id:"P002",nom:"Carine Beti",metier:"Vendeuse jeans",ville:"Yaoundé",emoji:"👖",couleur:"#F472B6",hasId:true},
@@ -3457,43 +3457,90 @@ async function validerPrest(id, action){
   }
 }
 
+function setVerifTab(tab){ verifTab=tab; renderAdminVerifs(); }
+
 async function renderAdminVerifs(){
-  s('<div style="padding:20px 16px 90px;background:var(--bg);min-height:100%"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px"><div><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Administration</div><h2 style="font-size:22px;font-weight:800;color:var(--text)">Vérifications 🛡️</h2></div><button onclick="nettoyerAnciennesVerifs()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:12px;color:var(--err);font-size:11px;font-weight:700;padding:8px 12px;cursor:pointer">🗑️ Nettoyer</button></div><div id="verif-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div></div>');
+  s('<div style="padding:20px 16px 90px;background:var(--bg);min-height:100%">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Administration</div>'
+    +'<h2 style="font-size:22px;font-weight:800;color:var(--text)">Vérifications 🛡️</h2></div>'
+    +'<button onclick="nettoyerAnciennesVerifs()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:12px;color:var(--err);font-size:11px;font-weight:700;padding:8px 12px;cursor:pointer">🗑️ Nettoyer</button>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">'
+    +'<button onclick="setVerifTab(\'pending\')" style="padding:10px;border-radius:12px;border:1.5px solid '+(verifTab==='pending'?'var(--accent)':'var(--border)')+';background:'+(verifTab==='pending'?'rgba(91,184,245,.12)':'var(--card)')+';color:'+(verifTab==='pending'?'var(--accent)':'var(--muted)')+';font-weight:700;font-size:13px;cursor:pointer">⏳ En attente</button>'
+    +'<button onclick="setVerifTab(\'verified\')" style="padding:10px;border-radius:12px;border:1.5px solid '+(verifTab==='verified'?'var(--ok)':'var(--border)')+';background:'+(verifTab==='verified'?'rgba(26,138,74,.12)':'var(--card)')+';color:'+(verifTab==='verified'?'var(--ok)':'var(--muted)')+';font-weight:700;font-size:13px;cursor:pointer">✓ Vérifiés</button>'
+    +'</div>'
+    +'<div id="verif-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div></div>');
   const el = document.getElementById('verif-list');
   try {
     const snap = await db.collection('users').where('role','==','prestataire').get();
     const allPrests = snap.docs.map(d=>{ const obj=d.data(); obj.id=d.id; return obj; });
-    // Ne montrer que ceux avec photoBase64 ET selfieBase64
-    const prests = allPrests.filter(v=>v.photoBase64 && v.selfieBase64);
-    window._pendingVerifs = allPrests; // garder tous pour showVerifDetail
+    window._pendingVerifs = allPrests;
     if(!el) return;
-    if(prests.length===0){
-      el.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:48px">📭</div><div style="margin-top:12px;color:var(--muted)">Aucun dossier complet à vérifier</div><div style="font-size:12px;color:var(--muted);margin-top:8px">Les dossiers sans pièce + selfie sont masqués</div></div>';
-      return;
+
+    if(verifTab === 'pending'){
+      const pending = allPrests.filter(v => v.idPhotoBase64 && v.selfieBase64 && v.verifStatut !== 'approuve');
+      if(pending.length === 0){
+        el.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:48px">📭</div><div style="margin-top:12px;color:var(--muted)">Aucun dossier en attente</div></div>';
+        return;
+      }
+      let html='<p style="color:var(--muted);font-size:13px;margin-bottom:16px">'+pending.length+' dossier(s) à traiter</p>';
+      pending.forEach(v=>{
+        html+='<div id="card-'+v.id+'" style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer">';
+        html+='<div style="display:flex;align-items:center;gap:12px">';
+        html+='<div style="width:46px;height:46px;border-radius:12px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;font-size:22px">🧑‍🔧</div>';
+        html+='<div style="flex:1"><div style="font-weight:800;font-size:15px;color:var(--text)">'+(v.nom||'Sans nom')+'</div>';
+        html+='<div style="font-size:12px;color:var(--muted);margin-top:2px">'+(v.metier||'Métier non renseigné')+'</div>';
+        html+='<div style="font-size:11px;margin-top:4px;display:flex;gap:6px"><span style="background:rgba(34,197,94,.15);color:var(--ok);padding:2px 7px;border-radius:20px;font-weight:700">🪪 Pièce</span><span style="background:rgba(34,197,94,.15);color:var(--ok);padding:2px 7px;border-radius:20px;font-weight:700">🤳 Selfie</span></div></div>';
+        html+='<div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(212,160,23,.15);color:var(--gold)">En attente</div>';
+        html+='</div><div style="margin-top:8px;font-size:11px;color:var(--accent);font-weight:600">👁️ Voir le dossier →</div></div>';
+      });
+      el.innerHTML=html;
+      pending.forEach(v=>{
+        const card=document.getElementById('card-'+v.id);
+        if(card) card.addEventListener('click',()=>showVerifDetail(v.id, false));
+      });
+    } else {
+      const verified = allPrests.filter(v => v.verifie===true && v.verifStatut==='approuve');
+      if(verified.length === 0){
+        el.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:48px">✅</div><div style="margin-top:12px;color:var(--muted)">Aucun prestataire vérifié</div></div>';
+        return;
+      }
+      let html='<p style="color:var(--muted);font-size:13px;margin-bottom:16px">'+verified.length+' prestataire(s) vérifié(s)</p>';
+      verified.forEach(v=>{
+        html+='<div style="background:var(--card);border:1.5px solid rgba(26,138,74,.3);border-radius:16px;padding:16px;margin-bottom:12px">';
+        html+='<div style="display:flex;align-items:center;gap:12px">';
+        html+='<div style="width:46px;height:46px;border-radius:12px;background:rgba(26,138,74,.12);display:flex;align-items:center;justify-content:center;font-size:22px">🧑‍🔧</div>';
+        html+='<div style="flex:1"><div style="font-weight:800;font-size:15px;color:var(--text)">'+(v.nom||'Sans nom')+'</div>';
+        html+='<div style="font-size:12px;color:var(--muted);margin-top:2px">'+(v.metier||'Métier non renseigné')+'</div></div>';
+        html+='<div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(26,138,74,.15);color:var(--ok)">✓ Vérifié</div>';
+        html+='</div>';
+        html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">';
+        html+='<button id="view-'+v.id+'" style="padding:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">👁️ Voir dossier</button>';
+        html+='<button id="rev-'+v.id+'" style="padding:10px;background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);border-radius:12px;color:var(--err);font-size:12px;font-weight:700;cursor:pointer">🚫 Révoquer</button>';
+        html+='</div></div>';
+      });
+      el.innerHTML=html;
+      verified.forEach(v=>{
+        const viewBtn=document.getElementById('view-'+v.id);
+        const revBtn=document.getElementById('rev-'+v.id);
+        if(viewBtn) viewBtn.addEventListener('click',()=>showVerifDetail(v.id, true));
+        if(revBtn) revBtn.addEventListener('click',()=>revoquerBadge(v.id));
+      });
     }
-    let html='<p style="color:var(--muted);font-size:13px;margin-bottom:16px">'+prests.length+' dossier(s) complet(s) · '+(allPrests.length-prests.length)+' incomplet(s) masqué(s)</p>';
-    prests.forEach(v=>{
-      const badge=v.verifie?'✓ Vérifié':'En attente';
-      const badgeBg=v.verifie?'rgba(26,138,74,.15)':'rgba(212,160,23,.15)';
-      const badgeCol=v.verifie?'var(--ok)':'var(--gold)';
-      html+='<div id="card-'+v.id+'" style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer">';
-      html+='<div style="display:flex;align-items:center;gap:12px">';
-      html+='<div style="width:46px;height:46px;border-radius:12px;background:rgba(91,184,245,.12);display:flex;align-items:center;justify-content:center;font-size:22px">🧑‍🔧</div>';
-      html+='<div style="flex:1"><div style="font-weight:800;font-size:15px;color:var(--text)">'+(v.nom||'Sans nom')+'</div>';
-      html+='<div style="font-size:12px;color:var(--muted);margin-top:2px">'+(v.metier||'Métier non renseigné')+'</div>';
-      html+='<div style="font-size:11px;margin-top:4px;display:flex;gap:6px"><span style="background:rgba(34,197,94,.15);color:var(--ok);padding:2px 7px;border-radius:20px;font-weight:700">🪪 Pièce</span><span style="background:rgba(34,197,94,.15);color:var(--ok);padding:2px 7px;border-radius:20px;font-weight:700">🤳 Selfie</span></div></div>';
-      html+='<div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:'+badgeBg+';color:'+badgeCol+'">'+badge+'</div>';
-      html+='</div><div style="margin-top:8px;font-size:11px;color:var(--accent);font-weight:600">👁️ Voir le dossier →</div></div>';
-    });
-    el.innerHTML=html;
-    prests.forEach(v=>{
-      const card=document.getElementById('card-'+v.id);
-      if(card) card.addEventListener('click',()=>showVerifDetail(v.id));
-    });
   } catch(e){
     if(el) el.innerHTML='<div style="background:rgba(204,34,34,.1);border-radius:12px;padding:16px"><div style="color:var(--err);font-weight:700">Erreur: '+e.message+'</div></div>';
     console.error('renderAdminVerifs:',e);
   }
+}
+
+async function revoquerBadge(id){
+  if(!confirm('Révoquer le badge de ce prestataire ?')) return;
+  try {
+    await db.collection('users').doc(id).update({ verifie:false, verifStatut:'rejete' });
+    showToast('Badge révoqué.','var(--warn)');
+    renderAdminVerifs();
+  } catch(e){ showToast('Erreur: '+e.message,'var(--err)'); }
 }
 
 async function nettoyerAnciennesVerifs(){
@@ -3595,7 +3642,7 @@ function openImageZoom(src){
   }, {passive:true});
 }
 
-function showVerifDetail(id){
+function showVerifDetail(id, readOnly){
   var vList = window._pendingVerifs || [];
   var v = null;
   for(var i = 0; i < vList.length; i++){ if(vList[i].id === id){ v = vList[i]; break; } }
@@ -3609,8 +3656,9 @@ function showVerifDetail(id){
   modal.id = 'verif-modal';
   modal.style.cssText = 'align-items:flex-start;padding:0;overflow-y:auto';
 
-  var photoHtml = v.photoBase64
-    ? '<img id="vd-photo-img" src="' + v.photoBase64 + '" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in"/>'
+  var photoSrc = v.idPhotoBase64 || v.photoBase64 || '';
+  var photoHtml = photoSrc
+    ? '<img id="vd-photo-img" src="' + photoSrc + '" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in"/>'
     : '<div style="text-align:center;padding:20px"><div style="font-size:36px">📄</div><div style="font-size:10px;color:var(--muted);margin-top:6px">Non soumise</div></div>';
 
   var selfieHtml = v.selfieBase64
@@ -3620,7 +3668,7 @@ function showVerifDetail(id){
   var inner = '<div style="background:var(--bg);width:100%;min-height:100%;padding:24px 20px 40px">';
   inner += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">';
   inner += '<button id="modal-back" style="background:var(--card);border:none;border-radius:12px;color:var(--text);font-size:18px;width:40px;height:40px;cursor:pointer">←</button>';
-  inner += '<h2 style="font-size:18px;font-weight:800;color:var(--text)">Dossier complet</h2></div>';
+  inner += '<h2 style="font-size:18px;font-weight:800;color:var(--text)">Dossier complet'+(readOnly?' <span style="font-size:11px;font-weight:600;color:var(--ok);background:rgba(26,138,74,.12);padding:3px 8px;border-radius:20px">✓ Vérifié</span>':'')+'</h2></div>';
   inner += '<div style="background:var(--card);border-radius:16px;padding:16px;margin-bottom:16px">';
   inner += '<div style="font-weight:800;font-size:16px;color:var(--text)">' + (v.nom||'Sans nom') + '</div>';
   inner += '<div style="font-size:13px;color:var(--accent);margin-top:4px">' + (v.metier||'Prestataire') + '</div>';
@@ -3632,20 +3680,25 @@ function showVerifDetail(id){
   inner += '<div><div style="font-size:10px;color:var(--muted);font-weight:700;text-align:center;margin-bottom:8px">PIÈCE</div><div style="background:var(--card);border-radius:14px;overflow:hidden;aspect-ratio:1;display:flex;align-items:center;justify-content:center">' + photoHtml + '</div></div>';
   inner += '<div><div style="font-size:10px;color:var(--muted);font-weight:700;text-align:center;margin-bottom:8px">SELFIE</div><div style="background:var(--card);border-radius:14px;overflow:hidden;aspect-ratio:1;display:flex;align-items:center;justify-content:center">' + selfieHtml + '</div></div>';
   inner += '</div>';
-  inner += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
-  inner += '<button id="btn-refuse" style="padding:16px;background:rgba(204,34,34,.1);border:1.5px solid var(--err);border-radius:16px;color:var(--err);font-weight:800;font-size:14px;cursor:pointer">✕ Refuser</button>';
-  inner += '<button id="btn-approuve" style="padding:16px;background:linear-gradient(135deg,#1A8A4A,#2952CC);border:none;border-radius:16px;color:#fff;font-weight:800;font-size:14px;cursor:pointer">✓ Approuver</button>';
-  inner += '</div></div>';
+  if(!readOnly){
+    inner += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+    inner += '<button id="btn-refuse" style="padding:16px;background:rgba(204,34,34,.1);border:1.5px solid var(--err);border-radius:16px;color:var(--err);font-weight:800;font-size:14px;cursor:pointer">✕ Refuser</button>';
+    inner += '<button id="btn-approuve" style="padding:16px;background:linear-gradient(135deg,#1A8A4A,#2952CC);border:none;border-radius:16px;color:#fff;font-weight:800;font-size:14px;cursor:pointer">✓ Approuver</button>';
+    inner += '</div>';
+  }
+  inner += '</div>';
 
   modal.innerHTML = inner;
   document.body.appendChild(modal);
 
   document.getElementById('modal-back').addEventListener('click', function(){ modal.remove(); });
-  document.getElementById('btn-refuse').addEventListener('click', function(){ traiterVerif(v.id,'refuse'); modal.remove(); });
-  document.getElementById('btn-approuve').addEventListener('click', function(){ traiterVerif(v.id,'approuve'); modal.remove(); });
+  if(!readOnly){
+    document.getElementById('btn-refuse').addEventListener('click', function(){ traiterVerif(v.id,'refuse'); modal.remove(); });
+    document.getElementById('btn-approuve').addEventListener('click', function(){ traiterVerif(v.id,'approuve'); modal.remove(); });
+  }
   var pImg = document.getElementById('vd-photo-img');
   var sImg = document.getElementById('vd-selfie-img');
-  if(pImg) pImg.addEventListener('click', function(){ openImageZoom(v.photoBase64); });
+  if(pImg) pImg.addEventListener('click', function(){ openImageZoom(photoSrc); });
   if(sImg) sImg.addEventListener('click', function(){ openImageZoom(v.selfieBase64); });
 }
 
