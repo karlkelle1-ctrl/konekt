@@ -1510,14 +1510,29 @@ function setVerifMode(mode){
 
 async function previewPhoto(input, previewId){
   if(input.files && input.files[0]){
+    const prev = document.getElementById(previewId||'photo-preview');
+    if(prev) prev.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:4px">⏳ Compression...</div>`;
     try{
-      const compressed = await compressImageFile(input.files[0], { maxWidth: 1200, maxHeight: 1200, targetBytes: 700000 });
-      const prev = document.getElementById(previewId||'photo-preview');
+      let compressed = await compressImageFile(input.files[0], { maxWidth:800, maxHeight:800, targetBytes:300000, minQuality:0.3 });
+      // Second passage si encore > 400KB
+      if(compressed.length > 400000){
+        const canvas = document.createElement('canvas');
+        const imgEl = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=compressed; });
+        const scale = Math.min(1, Math.sqrt(300000 / compressed.length));
+        canvas.width = Math.round(imgEl.width * scale);
+        canvas.height = Math.round(imgEl.height * scale);
+        canvas.getContext('2d').drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+        let q = 0.5;
+        let out = canvas.toDataURL('image/jpeg', q);
+        while(out.length > 400000 && q > 0.2){ q -= 0.07; out = canvas.toDataURL('image/jpeg', q); }
+        compressed = out;
+      }
       if(prev) prev.innerHTML = `<img src="${compressed}" style="width:80px;height:80px;object-fit:cover;border-radius:10px;margin-bottom:4px"/>`;
       if(previewId==='photo-preview') window._photoBase64 = compressed;
       if(previewId==='selfie-preview') window._selfieBase64 = compressed;
     }catch(err){
       showToast('Image impossible à traiter','var(--err)');
+      if(prev) prev.innerHTML = '';
       console.error(err);
     }
   }
@@ -1676,13 +1691,18 @@ function closePin(){ const m=$('pin-modal'); if(m) m.remove(); }
 // ══════════════════════════════════════════════
 function renderCompleteProfile(){
   setNav(false);
-  let photoB64='', selfieB64='';
+  const isRejete = STATE.user && STATE.user.verifStatut === 'rejete';
+  const rejeteHtml = isRejete ? `<div style="background:rgba(224,85,85,.12);border:1.5px solid rgba(224,85,85,.4);border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start">
+    <span style="font-size:22px">❌</span>
+    <div><div style="font-weight:800;color:var(--err);font-size:14px">Dossier refusé</div><div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.5">Ton dossier a été refusé par l'administrateur. Soumet à nouveau une pièce d'identité valide pour accéder à l'application.</div></div>
+  </div>` : '';
   s(`<div style="min-height:100%;background:var(--bg);padding:28px 20px;display:flex;flex-direction:column">
     <div style="text-align:center;margin-bottom:24px">
       <div style="font-size:36px;margin-bottom:8px">🪪</div>
       <div style="font-size:20px;font-weight:800">Complète ton profil</div>
       <div style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5">Pour accéder à KoneKt, tu dois soumettre ta pièce d'identité. C'est obligatoire pour les prestataires.</div>
     </div>
+    ${rejeteHtml}
     <div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px">
       <div style="font-weight:700;margin-bottom:10px">📄 Pièce d'identité <span style="color:var(--err);font-size:11px;font-weight:800">Obligatoire</span></div>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--sand);border-radius:12px;padding:12px">
@@ -1708,34 +1728,64 @@ function renderCompleteProfile(){
   window._cpPhoto = ''; window._cpSelfie = '';
 }
 
-window.cpPhotoChange = function(input){
+window.cpPhotoChange = async function(input){
   const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e){
-    window._cpPhoto = e.target.result;
-    const lbl = document.getElementById('cp-photo-lbl');
-    const prev = document.getElementById('cp-photo-preview');
-    const img = document.getElementById('cp-photo-img');
+  const lbl = document.getElementById('cp-photo-lbl');
+  const prev = document.getElementById('cp-photo-preview');
+  const img = document.getElementById('cp-photo-img');
+  if(lbl) lbl.textContent = '⏳ Compression...';
+  try {
+    let compressed = await compressImageFile(file, { maxWidth:800, maxHeight:800, targetBytes:300000, minQuality:0.3 });
+    if(compressed.length > 400000){
+      const imgEl = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=compressed; });
+      const canvas2 = document.createElement('canvas');
+      const scale = Math.min(1, Math.sqrt(300000 / compressed.length));
+      canvas2.width = Math.round(imgEl.width * scale);
+      canvas2.height = Math.round(imgEl.height * scale);
+      canvas2.getContext('2d').drawImage(imgEl, 0, 0, canvas2.width, canvas2.height);
+      let q = 0.5;
+      let out = canvas2.toDataURL('image/jpeg', q);
+      while(out.length > 400000 && q > 0.2){ q -= 0.07; out = canvas2.toDataURL('image/jpeg', q); }
+      compressed = out;
+    }
+    window._cpPhoto = compressed;
     if(lbl) lbl.textContent = file.name;
-    if(img) img.src = e.target.result;
+    if(img) img.src = compressed;
     if(prev) prev.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+  } catch(e){
+    showToast('Impossible de traiter cette image.','var(--err)');
+    if(lbl) lbl.textContent = 'Choisir une photo';
+  }
 };
 
-window.cpSelfieChange = function(input){
+window.cpSelfieChange = async function(input){
   const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e){
-    window._cpSelfie = e.target.result;
-    const lbl = document.getElementById('cp-selfie-lbl');
-    const prev = document.getElementById('cp-selfie-preview');
-    const img = document.getElementById('cp-selfie-img');
+  const lbl = document.getElementById('cp-selfie-lbl');
+  const prev = document.getElementById('cp-selfie-preview');
+  const img = document.getElementById('cp-selfie-img');
+  if(lbl) lbl.textContent = '⏳ Compression...';
+  try {
+    let compressed = await compressImageFile(file, { maxWidth:800, maxHeight:800, targetBytes:300000, minQuality:0.3 });
+    if(compressed.length > 400000){
+      const imgEl = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=compressed; });
+      const canvas2 = document.createElement('canvas');
+      const scale = Math.min(1, Math.sqrt(300000 / compressed.length));
+      canvas2.width = Math.round(imgEl.width * scale);
+      canvas2.height = Math.round(imgEl.height * scale);
+      canvas2.getContext('2d').drawImage(imgEl, 0, 0, canvas2.width, canvas2.height);
+      let q = 0.5;
+      let out = canvas2.toDataURL('image/jpeg', q);
+      while(out.length > 400000 && q > 0.2){ q -= 0.07; out = canvas2.toDataURL('image/jpeg', q); }
+      compressed = out;
+    }
+    window._cpSelfie = compressed;
     if(lbl) lbl.textContent = file.name;
-    if(img) img.src = e.target.result;
+    if(img) img.src = compressed;
     if(prev) prev.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+  } catch(e){
+    showToast('Impossible de traiter cette image.','var(--err)');
+    if(lbl) lbl.textContent = 'Choisir un selfie';
+  }
 };
 
 async function submitCompleteProfile(){
@@ -1791,8 +1841,8 @@ async function doLogin(){
     const user = await window.FB.fbLogin(email, pass);
     STATE.user = user;
     try{ await db.collection('users').doc(user.uid).set({ online:true }, { merge:true }); }catch(e){}
-    // Prestataire sans pièce d'identité → écran de complétion obligatoire
-    if(user.role === 'prestataire' && !user.photoBase64){
+    // Prestataire sans pièce d'identité ou rejeté → écran de complétion obligatoire
+    if(user.role === 'prestataire' && (!user.photoBase64 || user.verifStatut === 'rejete')){
       STATE.screen = 'complete-profile';
       startRealtime();
       renderCompleteProfile();
@@ -3505,10 +3555,18 @@ function showVerifDetail(id){
 
 async function traiterVerif(id, action){
   try {
-    await db.collection('users').doc(id).update({
-      verifie: action==='approuve',
-      verifStatut: action
-    });
+    if(action === 'approuve'){
+      await db.collection('users').doc(id).update({ verifie: true, verifStatut: 'approuve' });
+    } else {
+      // Refus : effacer les photos pour forcer une re-soumission, et marquer 'rejete'
+      await db.collection('users').doc(id).update({
+        verifie: false,
+        verifStatut: 'rejete',
+        photoBase64: '',
+        selfieBase64: '',
+        idPhotoBase64: ''
+      });
+    }
   } catch(e){ console.error(e); }
   showToast(action==='approuve'?'✅ Badge ✓ accordé au prestataire !':'❌ Vérification refusée.', action==='approuve'?'var(--ok)':'var(--err)');
   setTimeout(()=>renderAdminVerifs(), 100);
