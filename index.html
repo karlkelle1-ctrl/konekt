@@ -1839,6 +1839,12 @@ async function doLogin(){
   if(btn){ btn.textContent='Connexion...'; btn.disabled=true; }
   try {
     const user = await window.FB.fbLogin(email, pass);
+    if(user.banni){
+      await auth.signOut().catch(()=>{});
+      showToast('Votre compte a été suspendu. Contactez le support : konekt.cm@gmail.com','var(--err)');
+      if(btn){ btn.textContent='Se connecter'; btn.disabled=false; }
+      return;
+    }
     STATE.user = user;
     try{ await db.collection('users').doc(user.uid).set({ online:true }, { merge:true }); }catch(e){}
     // Prestataire sans pièce d'identité (nouvelle procédure : idPhotoBase64 requis) ou rejeté → écran de complétion obligatoire
@@ -2169,7 +2175,8 @@ function renderPrestDetail(){
   else tabContent=`
     <button class="btn btn-primary" onclick="goTabMsg('${p.id}')" style="margin-bottom:10px">💬 ${t('send_message_btn')}</button>
     <button class="btn btn-outline" onclick="goTabCmd('${p.id}')" style="margin-bottom:12px">📦 ${t('place_order')}</button>
-    <div style="display:flex;gap:10px"></div>`;
+    <div style="display:flex;gap:10px"></div>
+    ${STATE.user && STATE.user.role==='visiteur' ? `<button onclick="openSignalerModal('${p.id}')" style="width:100%;margin-top:14px;padding:12px;border-radius:14px;border:1.5px solid rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:var(--err);font-size:13px;font-weight:700;cursor:pointer">🚨 Signaler ce prestataire</button>` : ''}`;
   s(`
     <div style="padding-bottom:80px;animation:fadeUp .3s ease">
       <div style="background:linear-gradient(180deg,${p.couleur}12,var(--bg));padding:20px 18px 24px;border-bottom:1px solid var(--border);background:var(--bg)">
@@ -3274,11 +3281,11 @@ async function renderAdminPrestataires(){
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nom||'—'}</div>
           <div style="font-size:12px;color:var(--muted)">${p.metier||'—'} · ${p.ville||'—'}</div>
-          <div style="font-size:11px;margin-top:3px;display:flex;align-items:center;gap:8px">${statut}<span style="color:var(--muted)">${stars}</span></div>
+          <div style="font-size:11px;margin-top:3px;display:flex;align-items:center;gap:8px">${statut}<span style="color:var(--muted)">${stars}</span>${p.avertissements>0?`<span style="color:var(--warn);font-weight:700">⚠️ ${p.avertissements}</span>`:''}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:10px;color:var(--muted)">${dateInscrit}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">${p.telephone||'—'}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${p.banni?'<span style="color:var(--err);font-weight:700">🚫 Banni</span>':''}</div>
         </div>
       </div>`;
     }).join('');
@@ -3356,10 +3363,12 @@ async function renderAdminVisiteurs(){
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.nom||'—'}</div>
           <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.email||'—'}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px">📦 ${nbCmds} commande${nbCmds>1?'s':''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;display:flex;gap:8px;align-items:center">📦 ${nbCmds} commande${nbCmds>1?'s':''}${v.avertissements>0?`<span style="color:var(--warn);font-weight:700">⚠️ ${v.avertissements}</span>`:''}</div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end">
           <div style="font-size:10px;color:var(--muted)">${dateInscrit}</div>
+          ${v.banni?'<span style="font-size:10px;color:var(--err);font-weight:700">🚫 Banni</span>':''}
+          <button onclick="ouvrirGestionUser('${v.id}','${(v.nom||'').replace(/'/g,'')}',${v.avertissements||0})" style="font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;font-weight:700">⚙️ Gérer</button>
         </div>
       </div>`;
     }).join('');
@@ -3722,42 +3731,263 @@ async function traiterVerif(id, action){
   setTimeout(()=>renderAdminVerifs(), 100);
 }
 
+function openSignalerModal(prestId){
+  var prestNom = (STATE.selPrest && STATE.selPrest.nom) || 'Ce prestataire';
+  var old = document.getElementById('sig-modal'); if(old) old.remove();
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'sig-modal';
+  var motifs = ['Comportement inapproprié','Arnaque / Fraude','Fausses informations','Contenu offensant','Usurpation d\'identité','Autre'];
+  modal.innerHTML = '<div class="modal-sheet" style="padding:0 0 28px"><div class="modal-handle"></div><div style="padding:20px 18px 0">'
+    + '<div style="font-size:18px;font-weight:800;margin-bottom:4px">🚨 Signaler ce prestataire</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">'+prestNom+'</div>'
+    + '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Motif</div>'
+    + '<select id="sig-motif" style="width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px">'
+    + motifs.map(m=>'<option value="'+m+'">'+m+'</option>').join('')
+    + '</select></div>'
+    + '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Décrivez le problème <span style="color:var(--err)">*</span></div>'
+    + '<textarea id="sig-desc" rows="4" placeholder="Minimum 20 caractères..." style="width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;resize:none;box-sizing:border-box"></textarea></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    + '<button id="sig-cancel" style="padding:13px;border-radius:14px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);font-weight:700;font-size:14px;cursor:pointer">Annuler</button>'
+    + '<button id="sig-send" style="padding:13px;border-radius:14px;border:none;background:var(--err);color:#fff;font-weight:800;font-size:14px;cursor:pointer">Envoyer</button>'
+    + '</div></div></div>';
+  document.body.appendChild(modal);
+  modal.onclick = function(e){ if(e.target===modal) modal.remove(); };
+  document.getElementById('sig-cancel').addEventListener('click', function(){ modal.remove(); });
+  document.getElementById('sig-send').addEventListener('click', async function(){
+    var motif = document.getElementById('sig-motif').value;
+    var desc = document.getElementById('sig-desc').value.trim();
+    if(desc.length < 20){ showToast('La description doit faire au moins 20 caractères.','var(--err)'); return; }
+    var btn = document.getElementById('sig-send');
+    if(btn){ btn.textContent='Envoi...'; btn.disabled=true; }
+    try {
+      await db.collection('signalements').add({
+        prestataireUid: prestId, prestataireNom: prestNom,
+        auteurUid: STATE.user.uid, auteurNom: STATE.user.nom||'',
+        motif: motif, description: desc, statut:'ouvert',
+        creeLe: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('✅ Signalement envoyé. Merci de votre vigilance.');
+      modal.remove();
+    } catch(e){
+      showToast('Erreur: '+e.message,'var(--err)');
+      if(btn){ btn.textContent='Envoyer'; btn.disabled=false; }
+    }
+  });
+}
+
 async function renderAdminSigs(){
-  s(`<div style="padding:18px 14px 80px">
-    <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Signalements</h2>
-    <div id="sigs-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div>
-  </div>`);
+  s('<div style="padding:18px 14px 80px"><h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Signalements</h2><div id="sigs-list"><div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px">⏳</div><div style="margin-top:12px">Chargement...</div></div></div></div>');
   try {
     const snap = await db.collection('signalements').get();
     const sigs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    window._adminSigs = sigs;
     const el = document.getElementById('sigs-list');
     if(!el) return;
     if(sigs.length===0){
-      el.innerHTML=`<p style="color:var(--muted);font-size:13px;margin-bottom:18px">0 signalement ouvert</p><div style="text-align:center;padding:50px 0"><div style="font-size:56px">✅</div><div style="font-weight:700;margin-top:12px">Aucun signalement</div></div>`;
+      el.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:18px">0 signalement ouvert</p><div style="text-align:center;padding:50px 0"><div style="font-size:56px">✅</div><div style="font-weight:700;margin-top:12px">Aucun signalement</div></div>';
       return;
     }
-    const gc={haute:{c:'var(--err)'},moyenne:{c:'var(--warn)'},basse:{c:'var(--teal)'}};
-    el.innerHTML=`<p style="color:var(--muted);font-size:13px;margin-bottom:18px">${sigs.length} signalement${sigs.length>1?'s':''} ouvert${sigs.length>1?'s':''}</p>`+sigs.map((sg,i)=>{
-      const g=gc[sg.gravite]||{c:'var(--muted)'};
-      return `<div style="background:var(--card);border:1.5px solid ${g.c}44;border-radius:14px;overflow:hidden;animation:fadeUp .4s ease ${i*.07}s both;margin-bottom:11px">
-        <div style="background:${g.c}18;padding:11px 14px;display:flex;gap:8px;align-items:center">
-          <span style="font-size:17px">🚨</span><span style="font-weight:700;color:${g.c};font-size:13px">${sg.type||'Signalement'}</span>
-          <span style="background:${g.c}22;color:${g.c};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:capitalize">${sg.gravite||'—'}</span>
-        </div>
-        <div style="padding:12px 14px">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:3px">De : <b style="color:var(--text)">${sg.auteur||sg.de||'Inconnu'}</b> · Contre : <b style="color:var(--text)">${sg.cible||sg.contre||'Inconnu'}</b></div>
-          <div style="font-size:13px;background:var(--bg);border-radius:9px;padding:9px 11px;margin:9px 0;line-height:1.5">${sg.description||sg.desc||'—'}</div>
-          <div style="display:flex;gap:8px">
-            <button onclick="supprimerSig('${sg.id}')" style="flex:1;padding:9px;border-radius:9px;background:#EF444422;border:1px solid #EF444444;color:var(--err);font-weight:700;font-size:11px">Supprimer</button>
-            <button onclick="cloturerSig('${sg.id}')" style="flex:1;padding:9px;border-radius:9px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:11px">Clôturer</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
+    const ouverts = sigs.filter(s=>s.statut==='ouvert'||!s.statut);
+    const traites = sigs.filter(s=>s.statut==='traite'||s.statut==='cloture');
+    el.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:16px">'+ouverts.length+' ouvert(s) · '+traites.length+' traité(s)</p>'
+      + ouverts.concat(traites).map((sg,i)=>{
+        const isOpen = sg.statut==='ouvert'||!sg.statut;
+        const bord = isOpen ? 'rgba(239,68,68,.3)' : 'var(--border)';
+        const nom = sg.prestataireNom || sg.cible || sg.contre || 'Inconnu';
+        const auteur = sg.auteurNom || sg.auteur || sg.de || 'Inconnu';
+        const motif = sg.motif || sg.type || 'Signalement';
+        return '<div id="sigcard-'+sg.id+'" style="background:var(--card);border:1.5px solid '+bord+';border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;opacity:'+(isOpen?1:.65)+';">'
+          + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+          + '<div style="font-weight:800;font-size:14px;color:var(--text)">🚨 '+motif+'</div>'
+          + '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:'+(isOpen?'rgba(239,68,68,.12)':'rgba(107,114,128,.12)')+';color:'+(isOpen?'var(--err)':'var(--muted)')+'">'+( isOpen?'Ouvert':'Traité')+'</span>'
+          + '</div>'
+          + '<div style="font-size:12px;color:var(--muted)">Contre : <b style="color:var(--text)">'+nom+'</b></div>'
+          + '<div style="font-size:12px;color:var(--muted)">Par : '+auteur+'</div>'
+          + '<div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(sg.description||sg.desc||'—')+'</div>'
+          + '<div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:8px">👁️ Voir le dossier →</div>'
+          + '</div>';
+      }).join('');
+    sigs.forEach(sg=>{
+      const card = document.getElementById('sigcard-'+sg.id);
+      if(card) card.addEventListener('click', ()=>showSigDetail(sg.id));
+    });
   } catch(e){
     const el=document.getElementById('sigs-list');
-    if(el) el.innerHTML=`<div style="background:rgba(204,34,34,.1);border-radius:12px;padding:16px"><div style="color:var(--err);font-weight:700">Erreur: ${e.message}</div></div>`;
+    if(el) el.innerHTML='<div style="background:rgba(204,34,34,.1);border-radius:12px;padding:16px"><div style="color:var(--err);font-weight:700">Erreur: '+e.message+'</div></div>';
   }
+}
+
+async function showSigDetail(sigId){
+  var sigs = window._adminSigs || [];
+  var sg = sigs.find(function(s){ return s.id===sigId; });
+  if(!sg){ showToast('Signalement introuvable','var(--err)'); return; }
+  var old = document.getElementById('sig-detail-modal'); if(old) old.remove();
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'sig-detail-modal';
+  modal.style.cssText = 'align-items:flex-start;padding:0;overflow-y:auto';
+
+  var prestData = null; var avertHistory = [];
+  try {
+    if(sg.prestataireUid){
+      const [ps, as] = await Promise.all([
+        db.collection('users').doc(sg.prestataireUid).get(),
+        db.collection('avertissements').where('uid','==',sg.prestataireUid).get()
+      ]);
+      if(ps.exists) prestData = {id:ps.id,...ps.data()};
+      avertHistory = as.docs.map(d=>({id:d.id,...d.data()}));
+    }
+  } catch(e){ console.error(e); }
+
+  var nbAvert = prestData ? (prestData.avertissements||0) : 0;
+  var photoSrc = prestData ? (prestData.idPhotoBase64||prestData.photoBase64||'') : '';
+  var selfieSrc = prestData ? (prestData.selfieBase64||'') : '';
+  var motif = sg.motif||sg.type||'Signalement';
+  var desc = sg.description||sg.desc||'—';
+  var auteurNom = sg.auteurNom||sg.auteur||sg.de||'Inconnu';
+
+  var inner = '<div style="background:var(--bg);width:100%;min-height:100%;padding:24px 20px 40px">';
+  inner += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px"><button id="sig-detail-back" style="background:var(--card);border:none;border-radius:12px;color:var(--text);font-size:18px;width:40px;height:40px;cursor:pointer">←</button><h2 style="font-size:18px;font-weight:800">🚨 Dossier signalement</h2></div>';
+
+  inner += '<div style="background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.25);border-radius:16px;padding:14px;margin-bottom:14px">'
+    + '<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:5px">Motif</div>'
+    + '<div style="font-weight:800;font-size:15px;color:var(--err)">'+motif+'</div>'
+    + '<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin:10px 0 5px">Description</div>'
+    + '<div style="font-size:13px;line-height:1.6">'+desc+'</div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:8px">Par : '+auteurNom+'</div></div>';
+
+  if(prestData){
+    inner += '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px">'
+      + '<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:8px">Prestataire signalé</div>'
+      + '<div style="font-weight:800;font-size:15px">'+(prestData.nom||'—')+'</div>'
+      + '<div style="font-size:12px;color:var(--accent);margin-top:2px">'+(prestData.metier||'—')+'</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:2px">📍 '+(prestData.ville||'—')+'</div>'
+      + '<div style="margin-top:6px">'+(prestData.banni?'<span style="color:var(--err);font-size:11px;font-weight:700">🚫 Banni</span>':prestData.verifie?'<span style="color:var(--ok);font-size:11px;font-weight:700">✓ Vérifié</span>':'<span style="color:var(--muted);font-size:11px">Non vérifié</span>')+'</div>';
+    if(photoSrc||selfieSrc){
+      inner += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">';
+      if(photoSrc) inner += '<div><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px">PIÈCE</div><img id="sdp-photo" src="'+photoSrc+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;cursor:zoom-in"/></div>';
+      if(selfieSrc) inner += '<div><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px">SELFIE</div><img id="sdp-selfie" src="'+selfieSrc+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;cursor:zoom-in"/></div>';
+      inner += '</div>';
+    }
+    inner += '</div>';
+  }
+
+  inner += '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:14px;margin-bottom:20px">'
+    + '<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:8px">Historique avertissements ('+avertHistory.length+')</div>';
+  if(avertHistory.length===0){
+    inner += '<div style="font-size:12px;color:var(--muted)">Aucun avertissement précédent</div>';
+  } else {
+    avertHistory.forEach(function(a){
+      var d = a.creeLe ? new Date(a.creeLe.toDate?a.creeLe.toDate():a.creeLe).toLocaleDateString('fr-FR') : '—';
+      inner += '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;color:var(--warn);font-weight:700">⚠️ '+d+'</div><div style="font-size:12px;margin-top:3px">'+a.message+'</div></div>';
+    });
+  }
+  inner += '</div>';
+
+  inner += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+    + '<button id="btn-avert" style="padding:14px;background:rgba(245,158,11,.1);border:1.5px solid rgba(245,158,11,.4);border-radius:14px;color:var(--gold);font-weight:800;font-size:13px;cursor:pointer">⚠️ Avertissement</button>'
+    + '<button id="btn-ban" style="padding:14px;background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.4);border-radius:14px;color:var(--err);font-weight:800;font-size:13px;cursor:pointer">🚫 Bannir</button>'
+    + '</div>'
+    + '<button id="btn-reject-sig" style="width:100%;padding:13px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;color:var(--muted);font-weight:700;font-size:13px;cursor:pointer">✓ Rejeter le signalement</button>'
+    + '</div>';
+
+  modal.innerHTML = inner;
+  document.body.appendChild(modal);
+
+  document.getElementById('sig-detail-back').addEventListener('click', function(){ modal.remove(); });
+  var pEl=document.getElementById('sdp-photo'), sEl=document.getElementById('sdp-selfie');
+  if(pEl) pEl.addEventListener('click', function(){ openImageZoom(photoSrc); });
+  if(sEl) sEl.addEventListener('click', function(){ openImageZoom(selfieSrc); });
+
+  document.getElementById('btn-avert').addEventListener('click', function(){
+    modal.remove();
+    envoyerAvertissement(sg.prestataireUid, sg.prestataireNom||(prestData&&prestData.nom)||'—', sigId, nbAvert);
+  });
+  document.getElementById('btn-ban').addEventListener('click', function(){
+    modal.remove();
+    bannirUtilisateur(sg.prestataireUid, sg.prestataireNom||(prestData&&prestData.nom)||'—', sigId);
+  });
+  document.getElementById('btn-reject-sig').addEventListener('click', async function(){
+    try { await db.collection('signalements').doc(sigId).update({statut:'traite'}); showToast('Signalement rejeté.'); }
+    catch(e){ showToast('Erreur: '+e.message,'var(--err)'); }
+    modal.remove(); renderAdminSigs();
+  });
+}
+
+function envoyerAvertissement(uid, nom, sigId, currentCount){
+  var old = document.getElementById('avert-modal'); if(old) old.remove();
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'avert-modal';
+  modal.innerHTML = '<div class="modal-sheet" style="padding:0 0 28px"><div class="modal-handle"></div><div style="padding:20px 18px 0">'
+    + '<div style="font-size:17px;font-weight:800;margin-bottom:4px">⚠️ Avertissement</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">'+nom+'</div>'
+    + '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Message d\'avertissement</div>'
+    + '<textarea id="avert-msg" rows="4" placeholder="Expliquez la raison de cet avertissement..." style="width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;resize:none;box-sizing:border-box"></textarea></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    + '<button id="avert-cancel" style="padding:13px;border-radius:14px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);font-weight:700;font-size:14px;cursor:pointer">Annuler</button>'
+    + '<button id="avert-send" style="padding:13px;border-radius:14px;border:none;background:var(--gold);color:#fff;font-weight:800;font-size:14px;cursor:pointer">Envoyer</button>'
+    + '</div></div></div>';
+  document.body.appendChild(modal);
+  modal.onclick = function(e){ if(e.target===modal) modal.remove(); };
+  document.getElementById('avert-cancel').addEventListener('click', function(){ modal.remove(); });
+  document.getElementById('avert-send').addEventListener('click', async function(){
+    var msg = document.getElementById('avert-msg').value.trim();
+    if(!msg){ showToast('Le message est obligatoire.','var(--err)'); return; }
+    var btn = document.getElementById('avert-send');
+    if(btn){ btn.textContent='Envoi...'; btn.disabled=true; }
+    try {
+      var newCount = (currentCount||0) + 1;
+      await Promise.all([
+        db.collection('avertissements').add({ uid, nom, message:msg, adminUid:STATE.user.uid, creeLe:firebase.firestore.FieldValue.serverTimestamp() }),
+        db.collection('users').doc(uid).update({ avertissements: newCount }),
+        db.collection('notifications').add({ uid, type:'avertissement', message:msg, lu:false, creeLe:firebase.firestore.FieldValue.serverTimestamp() })
+      ]);
+      if(sigId) await db.collection('signalements').doc(sigId).update({statut:'traite'}).catch(()=>{});
+      showToast('⚠️ Avertissement envoyé.');
+      modal.remove();
+      if(newCount >= 3 && confirm('⚠️ Ce profil a maintenant '+newCount+' avertissements. Voulez-vous le bannir ?')){
+        bannirUtilisateur(uid, nom, null); return;
+      }
+      renderAdminSigs();
+    } catch(e){
+      showToast('Erreur: '+e.message,'var(--err)');
+      if(btn){ btn.textContent='Envoyer'; btn.disabled=false; }
+    }
+  });
+}
+
+async function bannirUtilisateur(uid, nom, sigId){
+  var raison = prompt('Raison du bannissement :', 'Violation des conditions d\'utilisation');
+  if(raison === null) return;
+  try {
+    await db.collection('users').doc(uid).update({ banni:true, bannedAt:firebase.firestore.FieldValue.serverTimestamp(), bannedReason:raison||'Violation des CGU' });
+    if(sigId) await db.collection('signalements').doc(sigId).update({statut:'traite'}).catch(()=>{});
+    await db.collection('notifications').add({ uid, type:'banni', message:'Votre compte a été suspendu. Contactez le support : konekt.cm@gmail.com', lu:false, creeLe:firebase.firestore.FieldValue.serverTimestamp() });
+    showToast('🚫 '+nom+' a été banni.','var(--err)');
+    renderAdminSigs();
+  } catch(e){ showToast('Erreur: '+e.message,'var(--err)'); }
+}
+
+function ouvrirGestionUser(uid, nom, currentCount){
+  var old = document.getElementById('user-mgmt-modal'); if(old) old.remove();
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'user-mgmt-modal';
+  modal.innerHTML = '<div class="modal-sheet" style="padding:0 0 28px"><div class="modal-handle"></div><div style="padding:20px 18px 0">'
+    + '<div style="font-size:17px;font-weight:800;margin-bottom:4px">⚙️ Gérer l\'utilisateur</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:18px">'+nom+'</div>'
+    + '<div style="display:flex;flex-direction:column;gap:10px">'
+    + '<button id="umgmt-avert" style="padding:14px;background:rgba(245,158,11,.1);border:1.5px solid rgba(245,158,11,.4);border-radius:14px;color:var(--gold);font-weight:800;font-size:14px;cursor:pointer">⚠️ Envoyer un avertissement</button>'
+    + '<button id="umgmt-ban" style="padding:14px;background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.4);border-radius:14px;color:var(--err);font-weight:800;font-size:14px;cursor:pointer">🚫 Bannir ce compte</button>'
+    + '<button id="umgmt-cancel" style="padding:13px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer">Annuler</button>'
+    + '</div></div></div>';
+  document.body.appendChild(modal);
+  modal.onclick = function(e){ if(e.target===modal) modal.remove(); };
+  document.getElementById('umgmt-cancel').addEventListener('click', function(){ modal.remove(); });
+  document.getElementById('umgmt-avert').addEventListener('click', function(){ modal.remove(); envoyerAvertissement(uid, nom, null, currentCount); });
+  document.getElementById('umgmt-ban').addEventListener('click', function(){ modal.remove(); bannirUtilisateur(uid, nom, null); });
 }
 
 async function cloturerSig(id){
