@@ -140,6 +140,18 @@ textarea{resize:none;}
 .chip-ok{background:rgba(26,138,74,.12);color:var(--ok);}
 .chip-err{background:rgba(204,34,34,.1);color:var(--err);}
 .chip-gold{background:rgba(212,160,23,.12);color:var(--gold);}
+/* ── PORTFOLIO ── */
+.portfolio-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.portfolio-item{background:var(--card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;}
+.portfolio-img{width:100%;height:120px;object-fit:cover;cursor:zoom-in;display:block;}
+/* ── DEVIS CARD ── */
+.devis-card{border:2px solid var(--gold);border-radius:18px;padding:14px;max-width:280px;background:var(--card);}
+/* ── NOTIF DOT ── */
+.notif-dot{position:absolute;top:4px;right:10%;width:9px;height:9px;border-radius:50%;background:var(--err);border:2px solid var(--text);}
+/* ── STATS BARS ── */
+.stat-bars{display:flex;gap:5px;align-items:flex-end;height:80px;margin-top:10px;}
+.stat-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.stat-bar{width:100%;border-radius:5px 5px 2px 2px;min-height:6px;}
 </style>
 <link rel="icon" type="image/png" href="icon-192.png"/>
 <link rel="apple-touch-icon" href="icon-192.png"/>
@@ -355,8 +367,13 @@ let CMDS_UNSUB = null;
 let CHAT_UNSUB = null;
 let PRODUCTS_UNSUB = null;
 let REVIEWS_UNSUB = null;
+let NOTIFICATIONS_UNSUB = null;
 let PRODUCTS = [];
 let REVIEWS = [];
+let NOTIFICATIONS = [];
+let PORTFOLIO = [];
+let PORTFOLIO_OWNER_UID = null;
+let NOTIF_INIT_DONE = false;
 let prestMgmtTab = 'gestion';
 
 const DEFAULT_PREST_COLORS = ['#F5C842','#FF6B9D','#0ECFC9','#A78BFA','#22C55E','#FB923C','#4ADE80','#38BDF8','#60A5FA','#F472B6'];
@@ -439,6 +456,9 @@ function normalizeCmd(docId, data){
   return {
     id: docId,
     prestId: data.prestId || data.prestataireUid || '',
+    clientUid: safeText(data.clientUid, ''),
+    clientNom: safeText(data.clientNom, 'Client'),
+    clientEmail: safeText(data.clientEmail, ''),
     statut: data.statut || 'en_attente',
     service: safeText(data.service, 'Service'),
     date: safeText(data.date, new Date().toISOString().slice(0,10)),
@@ -446,7 +466,8 @@ function normalizeCmd(docId, data){
     duree: Number(data.duree || 1) || 1,
     adresse: safeText(data.adresse, ''),
     total: Number(data.total || 0) || 0,
-    cree: safeText(data.cree, '')
+    cree: safeText(data.cree, ''),
+    clientConfirme: data.clientConfirme === true
   };
 }
 
@@ -483,7 +504,8 @@ function stopRealtime(){
   try{ if(CHAT_UNSUB) CHAT_UNSUB(); }catch(e){}
   try{ if(PRODUCTS_UNSUB) PRODUCTS_UNSUB(); }catch(e){}
   try{ if(REVIEWS_UNSUB) REVIEWS_UNSUB(); }catch(e){}
-  PRESTS_UNSUB = CONVS_UNSUB = CMDS_UNSUB = CHAT_UNSUB = PRODUCTS_UNSUB = REVIEWS_UNSUB = null;
+  try{ if(NOTIFICATIONS_UNSUB) NOTIFICATIONS_UNSUB(); }catch(e){}
+  PRESTS_UNSUB = CONVS_UNSUB = CMDS_UNSUB = CHAT_UNSUB = PRODUCTS_UNSUB = REVIEWS_UNSUB = NOTIFICATIONS_UNSUB = null;
 }
 function loadPrestatairesRealtime(){
   try{ if(PRESTS_UNSUB) PRESTS_UNSUB(); }catch(e){}
@@ -564,6 +586,28 @@ function loadProductsRealtime(){
     PRODUCTS = [];
   });
 }
+function loadNotificationsRealtime(){
+  if(!STATE.user || !STATE.user.uid) return;
+  try{ if(NOTIFICATIONS_UNSUB) NOTIFICATIONS_UNSUB(); }catch(e){}
+  NOTIFICATIONS_UNSUB = db.collection('notifications')
+    .where('uid','==',STATE.user.uid)
+    .where('lu','==',false)
+    .orderBy('creeLe','desc')
+    .limit(20)
+    .onSnapshot(function(snap){
+      const prev = NOTIFICATIONS.length;
+      NOTIFICATIONS = snap.docs.map(function(doc){
+        var d = doc.data()||{};
+        return { id:doc.id, title:d.title||'', body:d.body||'' };
+      });
+      if(NOTIF_INIT_DONE && NOTIFICATIONS.length > prev){
+        var n = NOTIFICATIONS[0];
+        if(n) pushAppNotification(n.title, n.body);
+      }
+      NOTIF_INIT_DONE = true;
+      if(STATE.screen==='app' && STATE.user && !STATE._adminMode) setNav(true, STATE.tab);
+    }, function(err){ console.error('NOTIFICATIONS error', err); });
+}
 
 function startRealtime(){
   ensureNotificationPermission();
@@ -581,6 +625,7 @@ function startRealtime(){
   if(STATE.user && STATE.user.uid){
     loadConvsRealtime();
     loadCmdsRealtime();
+    loadNotificationsRealtime();
   }
 }
 
@@ -1220,20 +1265,25 @@ function setNav(show, active){
   const nav=$('bottom-nav');
   nav.className=show?'show':'';
   const isPrest = STATE.user && STATE.user.role === 'prestataire';
-  // Rebuild nav HTML to match role
+  const msgUnread = CONVS.reduce(function(a,c){ return a+(c.nonLus||0); },0);
+  const cmdPending = CMDS.filter(function(c){ return c.statut==='en_attente'; }).length;
+  const notifUnread = NOTIFICATIONS.length;
+  const msgBadge = msgUnread > 0 ? `<div class="nav-badge">${msgUnread}</div>` : '';
+  const cmdBadge = cmdPending > 0 ? `<div class="nav-badge">${cmdPending}</div>` : '';
+  const notifDot = notifUnread > 0 ? `<div class="notif-dot"></div>` : '';
   if(show){
     if(isPrest){
       nav.innerHTML=`
-        <button class="nav-btn${active==='home'?' active':''}" id="nav-home" onclick="goTab('home')"><span class="nav-icon">🔧</span><span class="nav-lbl">Gestion</span></button>
-        <button class="nav-btn${active==='msgs'?' active':''}" id="nav-msgs" onclick="goTab('msgs')"><span class="nav-icon">💬</span><span class="nav-lbl">Messages</span></button>
+        <button class="nav-btn${active==='home'?' active':''}" id="nav-home" onclick="goTab('home')" style="position:relative"><span class="nav-icon">🔧</span><span class="nav-lbl">Gestion</span>${cmdBadge}</button>
+        <button class="nav-btn${active==='msgs'?' active':''}" id="nav-msgs" onclick="goTab('msgs')" style="position:relative"><span class="nav-icon">💬</span><span class="nav-lbl">Messages</span>${msgBadge}</button>
         <button class="nav-btn${active==='cmds'?' active':''}" id="nav-cmds" onclick="goTab('cmds')"><span class="nav-icon">📦</span><span class="nav-lbl">Commandes</span></button>
-        <button class="nav-btn${active==='profile'?' active':''}" id="nav-profile" onclick="goTab('profile')"><span class="nav-icon">👤</span><span class="nav-lbl">Profil</span></button>`;
+        <button class="nav-btn${active==='profile'?' active':''}" id="nav-profile" onclick="goTab('profile')" style="position:relative"><span class="nav-icon">👤</span><span class="nav-lbl">Profil</span>${notifDot}</button>`;
     } else {
       nav.innerHTML=`
         <button class="nav-btn${active==='home'?' active':''}" id="nav-home" onclick="goTab('home')"><span class="nav-icon">🏠</span><span class="nav-lbl">Accueil</span></button>
-        <button class="nav-btn${active==='msgs'?' active':''}" id="nav-msgs" onclick="goTab('msgs')"><span class="nav-icon">💬</span><span class="nav-lbl">Messages</span></button>
-        <button class="nav-btn${active==='cmds'?' active':''}" id="nav-cmds" onclick="goTab('cmds')"><span class="nav-icon">📦</span><span class="nav-lbl">Commandes</span></button>
-        <button class="nav-btn${active==='profile'?' active':''}" id="nav-profile" onclick="goTab('profile')"><span class="nav-icon">👤</span><span class="nav-lbl">Profil</span></button>`;
+        <button class="nav-btn${active==='msgs'?' active':''}" id="nav-msgs" onclick="goTab('msgs')" style="position:relative"><span class="nav-icon">💬</span><span class="nav-lbl">Messages</span>${msgBadge}</button>
+        <button class="nav-btn${active==='cmds'?' active':''}" id="nav-cmds" onclick="goTab('cmds')" style="position:relative"><span class="nav-icon">📦</span><span class="nav-lbl">Commandes</span>${cmdBadge}</button>
+        <button class="nav-btn${active==='profile'?' active':''}" id="nav-profile" onclick="goTab('profile')" style="position:relative"><span class="nav-icon">👤</span><span class="nav-lbl">Profil</span>${notifDot}</button>`;
     }
   }
 }
@@ -2125,6 +2175,14 @@ function reviewTabLabel(tab){
 
 function renderPrestDetail(){
   const p=STATE.selPrest; if(!p) return;
+  // Increment profile view counter (once per session per prestataire)
+  const _viewKey = '_viewed_'+p.id;
+  if(STATE.user && STATE.user.uid !== p.id && !window[_viewKey]){
+    window[_viewKey] = true;
+    db.collection('users').doc(p.id).update({ views: firebase.firestore.FieldValue.increment(1) }).catch(function(){});
+  }
+  // Reset portfolio cache when switching prestataire
+  if(PORTFOLIO_OWNER_UID && PORTFOLIO_OWNER_UID !== String(p.id)){ PORTFOLIO=[]; PORTFOLIO_OWNER_UID=null; }
   const tabs=['infos','activites','avis','contact'];
   const tabBtns=tabs.map(t=>{
     const action = (t==='avis') ? 'openAvisTab()' : "setPrestTab('"+t+"')";
@@ -2141,18 +2199,36 @@ function renderPrestDetail(){
     </div>
     ${p.verifie?`<div style="background:#22C55E11;border:1px solid #22C55E33;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:center"><span style="font-size:24px">🛡️</span><div><div style="font-weight:700;color:var(--ok);font-size:13px">${t('identity_verified')}</div><div style="color:var(--muted);font-size:12px">${t('id_checked_by')}</div></div></div>`:''}`;
   else if(prestTab==='activites'){
-    const items = PRODUCTS.filter(function(it){ return String(it.ownerUid)===String(p.id); });
-    tabContent = items.length ? items.map(function(it){
-      return `<div onclick="openProductPublic('${it.id}')" style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:10px;cursor:pointer">
-        ${it.photoBase64?`<img src="${it.photoBase64}" style="width:100%;height:170px;object-fit:cover;border-radius:14px;margin-bottom:12px;border:1px solid var(--border)"/>`:''}
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px">
-          <div><div style="font-weight:800;font-size:14px">${it.title}</div>${it.comment?`<div style="color:var(--muted);font-size:12px;margin-top:4px">${it.comment}</div>`:''}</div>
-          <div style="font-weight:800;color:var(--accent);font-size:13px">${it.price?fmt(it.price):t('on_quote')}</div>
-        </div>
-        <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-bottom:12px">${it.description||t('no_description')}</div>
-        <button onclick="event.stopPropagation(); openProductPublic('${it.id}')" class="btn btn-outline" style="padding:11px 14px">${t('see_quote')}</button>
-      </div>`;
-    }).join('') : `<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:18px;padding:18px;text-align:center;color:var(--muted)">${t('no_activity')}</div>`;
+    // Portfolio grid (photos)
+    if(PORTFOLIO_OWNER_UID !== String(p.id)){
+      tabContent = '<div style="text-align:center;padding:30px;color:var(--muted)">⏳ Chargement...</div>';
+      loadPortfolioForPrest(String(p.id)).then(function(){ if(prestTab==='activites' && STATE.selPrest && STATE.selPrest.id===p.id) renderPrestDetail(); });
+    } else {
+      const pfGrid = PORTFOLIO.length
+        ? '<div class="portfolio-grid">' + PORTFOLIO.map(function(it){
+            return `<div class="portfolio-item">
+              ${it.photoBase64?`<img class="portfolio-img" src="${it.photoBase64}" onclick="openImageZoom('${it.photoBase64}')" alt="${it.titre}"/>`:'<div style="width:100%;height:120px;background:var(--sand);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--muted)">📷</div>'}
+              <div style="padding:10px">
+                <div style="font-weight:700;font-size:12px;line-height:1.3;margin-bottom:3px">${it.titre}</div>
+                ${it.description?`<div style="font-size:11px;color:var(--muted);line-height:1.4">${it.description}</div>`:''}
+              </div>
+            </div>`;
+          }).join('') + '</div>'
+        : '';
+      // Service catalog
+      const items = PRODUCTS.filter(function(it){ return String(it.ownerUid)===String(p.id); });
+      const catalogHTML = items.length ? `<div class="stitle" style="margin-top:${PORTFOLIO.length?'16':'0'}px">Services & tarifs</div>` + items.map(function(it){
+        return `<div onclick="openProductPublic('${it.id}')" style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:10px;cursor:pointer">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:6px">
+            <div style="font-weight:800;font-size:14px">${it.title}</div>
+            <div style="font-weight:800;color:var(--accent);font-size:13px">${it.price?fmt(it.price):t('on_quote')}</div>
+          </div>
+          <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-bottom:10px">${it.description||t('no_description')}</div>
+          <button onclick="event.stopPropagation();openProductPublic('${it.id}')" class="btn btn-outline" style="padding:10px 14px">${t('see_quote')}</button>
+        </div>`;
+      }).join('') : '';
+      tabContent = (pfGrid || (!items.length ? `<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:18px;padding:18px;text-align:center;color:var(--muted)">${t('no_activity')}</div>` : '')) + catalogHTML;
+    }
   }
   else if(prestTab==='avis'){
     const reviews = getReviewsForPrest(p.id);
@@ -2163,13 +2239,20 @@ function renderPrestDetail(){
       : (!STATE.user || !STATE.user.uid
           ? `<button class="btn btn-outline" onclick="showToast(t('login_review_toast'),'var(--warn)')" style="margin-bottom:12px">${t('sign_in_rate')}</button>`
           : '');
+    const isOwnProfile = STATE.user && STATE.user.uid === p.id;
     tabContent = cta + (reviews.length ? reviews.map(function(a){
-      return `<div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:10px">
+      const hasReponse = a.reponse && a.reponse.trim();
+      return `<div id="review-card-${a.id}" style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:16px;margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;margin-bottom:7px">
           <span style="font-weight:700;font-size:13px">${a.authorName}</span>
           <span class="stars">${stars(a.note)}</span>
         </div>
-        <p style="color:var(--muted);font-size:12px;line-height:1.5">${a.comment || t('no_comment')}</p>
+        <p style="color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:${hasReponse||isOwnProfile?'10':'0'}px">${a.comment || t('no_comment')}</p>
+        ${hasReponse?`<div style="background:var(--sand);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:${isOwnProfile?'10':'0'}px">
+          <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:4px">Réponse du prestataire</div>
+          <p style="font-size:12px;color:var(--text2);line-height:1.5">${a.reponse}</p>
+        </div>`:''}
+        ${isOwnProfile?`<button onclick="repondreAvis('${a.id}')" style="padding:7px 14px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer">${hasReponse?'✏️ Modifier la réponse':'💬 Répondre'}</button>`:''}
       </div>`;
     }).join('') : `<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:18px;padding:18px;text-align:center;color:var(--muted)">${canReview ? t('no_reviews_first') : t('no_reviews')}</div>`);
   }
@@ -2393,7 +2476,7 @@ function openConv(id){
     if(!cv) return;
     cv.msgs = snap.docs.map(function(doc){
       const d = doc.data() || {};
-      return {id:doc.id, from:d.from === (STATE.user||{}).uid ? 'me' : 'them', text:safeText(d.text,''), time:safeText(d.time,''), date:t('today')};
+      return {id:doc.id, from:d.from === (STATE.user||{}).uid ? 'me' : 'them', text:safeText(d.text,''), time:safeText(d.time,''), date:t('today'), type:d.type||'text', devisId:d.devisId||'', devisData:d.devisData||null};
     });
     if(selConvId===String(id) && STATE.tab==='msgs'){ renderChat(); }
   }, function(err){ console.error('CHAT snapshot error', err); renderChat(); });
@@ -2404,8 +2487,35 @@ let typingTimer=null;
 function renderChat(){
   const cv=CONVS.find(c=>c.id===selConvId); if(!cv) return;
   const p=prest(cv.prestId); if(!p) return;
+  const isPrestChat = STATE.user && STATE.user.role === 'prestataire';
   const bubbles=cv.msgs.map(m=>{
     const isMe=m.from==='me';
+    // Devis special bubble
+    if(m.type==='devis' && m.devisData){
+      var dd=m.devisData;
+      var dstatut=dd.statut||'en_attente';
+      var dcolor=dstatut==='accepte'?'var(--ok)':dstatut==='refuse'?'var(--err)':'var(--gold)';
+      var dlabel=dstatut==='accepte'?'✅ Accepté':dstatut==='refuse'?'❌ Refusé':'⏳ En attente';
+      var canAct=!isMe && dstatut==='en_attente';
+      var safeDD=JSON.stringify(dd).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,"&quot;");
+      return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};margin-bottom:10px">
+        <div class="devis-card">
+          <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.5px;margin-bottom:6px">📋 DEVIS</div>
+          <div style="font-weight:800;font-size:14px;margin-bottom:4px">${dd.service||''}</div>
+          ${dd.description?`<div style="font-size:12px;color:var(--muted);margin-bottom:6px;line-height:1.4">${dd.description}</div>`:''}
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            ${dd.delai?`<span style="font-size:11px;color:var(--muted)">⏱ ${dd.delai}</span>`:'<span></span>'}
+            <span style="font-weight:800;color:var(--accent);font-size:15px">${fmt(Number(dd.prix)||0)}</span>
+          </div>
+          ${dd.validJusqu?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Valable jusqu'au ${new Date(dd.validJusqu).toLocaleDateString('fr-FR')}</div>`:''}
+          <div style="font-size:11px;font-weight:700;color:${dcolor};margin-bottom:${canAct?'10':'0'}px">${dlabel}</div>
+          ${canAct?`<div style="display:flex;gap:8px">
+            <button onclick="accepterDevis('${m.devisId}','${selConvId}','${safeDD}')" style="flex:1;padding:9px;border-radius:10px;background:linear-gradient(135deg,#1A8A4A,#2952CC);color:#fff;border:none;font-weight:700;font-size:12px">✓ Accepter</button>
+            <button onclick="refuserDevis('${m.devisId}','${selConvId}')" style="flex:1;padding:9px;border-radius:10px;background:rgba(239,68,68,.1);color:var(--err);border:1px solid rgba(239,68,68,.3);font-weight:700;font-size:12px">✕ Refuser</button>
+          </div>`:''}
+        </div>
+      </div>`;
+    }
     return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};align-items:flex-end;gap:7px;margin-bottom:6px">
       ${!isMe?`<div class="avatar" style="width:26px;height:26px;background:${p.couleur}22;border:1px solid ${p.couleur}55;font-size:12px;overflow:hidden">${p.photoURL?`<img src="${p.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"/>`:p.emoji}</div>`:''}
       <div>
@@ -2433,11 +2543,14 @@ function renderChat(){
         </div>
       </div>
     </div>
-    <div style="padding:10px 14px 18px;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:flex-end;gap:8px;flex-shrink:0">
-      <div style="flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:9px 13px">
-        <textarea id="chat-inp" placeholder="${t('write_message')}" rows="1" onkeydown="chatEnter(event)" style="width:100%;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;max-height:80px;overflow-y:auto"></textarea>
+    <div style="padding:10px 14px 18px;background:var(--bg);border-top:1px solid var(--border);flex-shrink:0">
+      ${isPrestChat?`<div style="margin-bottom:8px"><button onclick="openDevisModal('${cv.id}')" style="padding:7px 14px;border-radius:10px;border:1.5px solid var(--gold);background:rgba(212,160,23,.08);color:var(--gold);font-weight:700;font-size:12px;cursor:pointer">📋 Envoyer un devis</button></div>`:''}
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <div style="flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:9px 13px">
+          <textarea id="chat-inp" placeholder="${t('write_message')}" rows="1" onkeydown="chatEnter(event)" style="width:100%;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;max-height:80px;overflow-y:auto"></textarea>
+        </div>
+        <button id="send-btn" onclick="sendMsg()" style="width:42px;height:42px;border-radius:13px;background:var(--card);border:1.5px solid var(--border);font-size:18px;display:flex;align-items:center;justify-content:center">➤</button>
       </div>
-      <button id="send-btn" onclick="sendMsg()" style="width:42px;height:42px;border-radius:13px;background:var(--card);border:1.5px solid var(--border);font-size:18px;display:flex;align-items:center;justify-content:center">➤</button>
     </div>
   </div>`);
   setTimeout(()=>{ const b=$('chat-bottom'); if(b) b.scrollIntoView(); },100);
@@ -2699,13 +2812,18 @@ function renderCmdDetail(){
     {l:"Intervention en cours",done:['en_cours','termine'].includes(cmd.statut)},
     {l:"Prestation terminée",done:cmd.statut==='termine'},
   ];
-  const actionBtn = isPrest && cmd.statut==='en_attente'
+  const clientConfirmBtn = !isPrest && cmd.statut==='termine' && !cmd.clientConfirme
+    ? `<button class="btn btn-primary" onclick="clientConfirmFin('${cmd.id}')" style="margin-top:12px">🎉 Confirmer & laisser un avis</button>`
+    : (!isPrest && cmd.statut==='termine' && cmd.clientConfirme
+      ? `<div style="margin-top:12px;padding:10px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:12px;text-align:center;font-size:13px;color:var(--ok)">✅ Prestation confirmée</div>`
+      : '');
+  const actionBtn = (isPrest && cmd.statut==='en_attente'
     ? `<button class="btn btn-primary" onclick="prestAcceptCmd('${cmd.id}')" style="margin-top:12px">✅ Accepter la commande</button>`
     : (isPrest && cmd.statut==='confirme'
       ? `<button class="btn btn-primary" onclick="prestStartCmd('${cmd.id}')" style="margin-top:12px">🚚 Démarrer l'intervention</button>`
       : (isPrest && cmd.statut==='en_cours'
         ? `<button class="btn btn-success" onclick="prestFinishCmd('${cmd.id}')" style="margin-top:12px">🎉 Marquer comme terminée</button>`
-        : ''));
+        : ''))) + clientConfirmBtn;
   s(`<div style="padding-bottom:80px;animation:fadeUp .3s ease">
     <div style="background:linear-gradient(180deg,${(p.couleur||'#5BB8F5')}12,var(--bg));padding:18px 16px 22px;border-bottom:1px solid var(--border)">
       <button onclick="selCmdId=null;renderCmdList()" style="background:var(--card);border:none;border-radius:10px;color:var(--text);width:36px;height:36px;font-size:18px;display:flex;align-items:center;justify-content:center;margin-bottom:14px">←</button>
@@ -2735,40 +2853,31 @@ function renderCmdDetail(){
 }
 
 function prestAcceptCmd(cmdId){
+  const cmd = CMDS.find(function(c){ return c.id===cmdId; });
   db.collection('commandes').doc(cmdId).set({ statut:'confirme' }, { merge:true })
-    .then(function(){ showToast('Commande acceptée'); })
-    .catch(function(e){
-      const msg = (e && e.message || '');
-      if(msg.includes('photoBase64') || msg.includes('longer than')){
-        showToast('Image trop lourde. Essaie une photo plus légère.','var(--err)');
-      } else {
-        showToast('Erreur: '+e.message,'var(--err)');
-      }
-    });
+    .then(function(){
+      showToast('Commande acceptée');
+      if(cmd && cmd.clientUid) sendNotification(cmd.clientUid, '✅ Commande acceptée', 'Votre demande "' + (cmd.service||'') + '" a été acceptée');
+    })
+    .catch(function(e){ showToast('Erreur: '+e.message,'var(--err)'); });
 }
 function prestStartCmd(cmdId){
+  const cmd = CMDS.find(function(c){ return c.id===cmdId; });
   db.collection('commandes').doc(cmdId).set({ statut:'en_cours' }, { merge:true })
-    .then(function(){ showToast('Intervention démarrée'); })
-    .catch(function(e){
-      const msg = (e && e.message || '');
-      if(msg.includes('photoBase64') || msg.includes('longer than')){
-        showToast('Image trop lourde. Essaie une photo plus légère.','var(--err)');
-      } else {
-        showToast('Erreur: '+e.message,'var(--err)');
-      }
-    });
+    .then(function(){
+      showToast('Intervention démarrée');
+      if(cmd && cmd.clientUid) sendNotification(cmd.clientUid, '🔄 Intervention démarrée', 'Le prestataire est en route pour "' + (cmd.service||'') + '"');
+    })
+    .catch(function(e){ showToast('Erreur: '+e.message,'var(--err)'); });
 }
 function prestFinishCmd(cmdId){
+  const cmd = CMDS.find(function(c){ return c.id===cmdId; });
   db.collection('commandes').doc(cmdId).set({ statut:'termine' }, { merge:true })
-    .then(function(){ showToast('Commande terminée'); })
-    .catch(function(e){
-      const msg = (e && e.message || '');
-      if(msg.includes('photoBase64') || msg.includes('longer than')){
-        showToast('Image trop lourde. Essaie une photo plus légère.','var(--err)');
-      } else {
-        showToast('Erreur: '+e.message,'var(--err)');
-      }
-    });
+    .then(function(){
+      showToast('Commande terminée');
+      if(cmd && cmd.clientUid) sendNotification(cmd.clientUid, '🎉 Prestation terminée', 'Confirmez la fin de "' + (cmd.service||'') + '" et laissez un avis');
+    })
+    .catch(function(e){ showToast('Erreur: '+e.message,'var(--err)'); });
 }
 
 // ══════════════════════════════════════════════
@@ -2904,7 +3013,8 @@ function renderProfile(){
     const tabs = [
       {id:'gestion', label: t('management_tab')},
       {id:'profil', label: t('my_profile')},
-      {id:'activites', label: t('my_activities_tab')}
+      {id:'activites', label: t('my_activities_tab')},
+      {id:'stats', label: '📊 Stats'}
     ];
     let content = '';
     if(prestMgmtTab==='gestion'){
@@ -2937,15 +3047,28 @@ function renderProfile(){
           <button class="btn btn-outline" onclick="setPrestGeoFromDevice()">📍 ${t('my_location')}</button>
         </div>
       </div>`;
+    } else if(prestMgmtTab==='stats'){
+      content = '<div id="stats-content"><div style="text-align:center;padding:40px 0;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">⏳</div>Chargement des statistiques...</div></div>';
+      setTimeout(async function(){
+        var html = await renderStatsContent();
+        var el = document.getElementById('stats-content');
+        if(el) el.innerHTML = html;
+      }, 0);
     } else {
+      // Trigger portfolio load if not yet loaded for this user
+      if(PORTFOLIO_OWNER_UID !== u.uid){
+        loadPortfolioForPrest(u.uid).then(function(){ if(prestMgmtTab==='activites') renderProfile(); });
+      }
       content = `<div class="card" style="margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <div>
             <div class="stitle" style="margin-bottom:4px">${t('my_activities_services')}</div>
             <div style="color:var(--muted);font-size:12px">${t('publish_activities_text')}</div>
           </div>
-          <button class="btn-ghost" onclick="openProductModal()">+ Ajouter</button>
+          <button class="btn-ghost" onclick="openPortfolioModal()">+ Réalisation</button>
         </div>
+        ${(PORTFOLIO_OWNER_UID===u.uid && PORTFOLIO.length) ? `<div class="stitle" style="margin-bottom:10px">Portfolio photos</div><div class="portfolio-grid" style="margin-bottom:14px">${PORTFOLIO.map(function(it){return `<div class="portfolio-item"><img class="portfolio-img" src="${it.photoBase64}" onclick="openImageZoom('${it.photoBase64}')"/><div style="padding:8px"><div style="font-weight:700;font-size:11px">${it.titre}</div><div style="display:flex;gap:6px;margin-top:6px"><button onclick="openPortfolioModal('${it.id}')" style="flex:1;padding:5px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:10px;font-weight:700">✏️</button><button onclick="deletePortfolioItem('${it.id}')" style="flex:1;padding:5px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:transparent;color:var(--err);font-size:10px;font-weight:700">🗑️</button></div></div></div>`;}).join('')}</div>` : ''}
+        <div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn-ghost" onclick="openPortfolioModal()">+ Photo</button><button class="btn-ghost" onclick="openProductModal()">+ Service</button></div>
         ${myItems.length ? myItems.map(function(it){
           return `<div style="border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;background:var(--sand)">
             ${it.photoBase64?`<img src="${it.photoBase64}" style="width:100%;height:160px;object-fit:cover;border-radius:12px;margin-bottom:10px;border:1px solid var(--border)"/>`:''}
@@ -3058,14 +3181,317 @@ function deleteProduct(productId){
   if(!confirm('Supprimer cette activité ?')) return;
   db.collection('products').doc(productId).delete()
     .then(function(){ showToast('Activité supprimée'); })
-    .catch(function(e){
-      const msg = (e && e.message || '');
-      if(msg.includes('photoBase64') || msg.includes('longer than')){
-        showToast('Image trop lourde. Essaie une photo plus légère.','var(--err)');
-      } else {
-        showToast('Erreur: '+e.message,'var(--err)');
-      }
+    .catch(function(e){ showToast('Erreur: '+e.message,'var(--err)'); });
+}
+
+// ══════════════════════════════════════════════
+//  NOTIFICATIONS IN-APP
+// ══════════════════════════════════════════════
+function sendNotification(uid, title, body){
+  if(!uid) return;
+  db.collection('notifications').add({
+    uid: uid, title: title, body: body, lu: false,
+    creeLe: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(){});
+}
+function markAllNotifsRead(){
+  NOTIFICATIONS.forEach(function(n){
+    db.collection('notifications').doc(n.id).update({lu:true}).catch(function(){});
+  });
+  NOTIFICATIONS = [];
+  if(STATE.screen==='app' && STATE.user && !STATE._adminMode) setNav(true, STATE.tab);
+}
+
+// ══════════════════════════════════════════════
+//  RÉPONSE AUX AVIS
+// ══════════════════════════════════════════════
+function repondreAvis(reviewId){
+  var existing = document.getElementById('reply-form-'+reviewId);
+  if(existing){ existing.remove(); return; }
+  var parent = document.getElementById('review-card-'+reviewId);
+  if(!parent) return;
+  var existingReponse = '';
+  var rev = REVIEWS.find(function(r){ return r.id===reviewId; });
+  if(rev && rev.reponse) existingReponse = rev.reponse;
+  var form = document.createElement('div');
+  form.id = 'reply-form-'+reviewId;
+  form.style.cssText = 'margin-top:10px;padding:10px;background:var(--sand);border-radius:12px;border:1px solid var(--border)';
+  form.innerHTML = '<textarea id="reply-inp-'+reviewId+'" placeholder="Votre réponse au client..." rows="3" style="width:100%;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;resize:none;font-family:\'Plus Jakarta Sans\',sans-serif">'+existingReponse+'</textarea>'
+    + '<div style="display:flex;gap:8px;margin-top:8px">'
+    + '<button onclick="sauvegarderReponseAvis(\''+reviewId+'\')" style="flex:1;padding:9px;border-radius:10px;background:linear-gradient(135deg,#1A8A4A,#2952CC);color:#fff;border:none;font-weight:700;font-size:12px;cursor:pointer">Publier</button>'
+    + '<button onclick="document.getElementById(\'reply-form-'+reviewId+'\').remove()" style="padding:9px 14px;border-radius:10px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:12px;cursor:pointer">Annuler</button>'
+    + '</div>';
+  parent.appendChild(form);
+}
+function sauvegarderReponseAvis(reviewId){
+  var inp = document.getElementById('reply-inp-'+reviewId);
+  if(!inp) return;
+  var texte = inp.value.trim();
+  if(!texte){ showToast('Écris une réponse','var(--err)'); return; }
+  db.collection('reviews').doc(reviewId).update({
+    reponse: texte,
+    reponduLe: firebase.firestore.FieldValue.serverTimestamp(),
+    reponduPar: (STATE.user||{}).nom || 'Prestataire'
+  }).then(function(){
+    showToast('Réponse publiée');
+    var form = document.getElementById('reply-form-'+reviewId);
+    if(form) form.remove();
+    renderPrestDetail();
+  }).catch(function(e){ showToast('Erreur: '+e.message,'var(--err)'); });
+}
+
+// ══════════════════════════════════════════════
+//  PORTFOLIO PRESTATAIRE
+// ══════════════════════════════════════════════
+async function loadPortfolioForPrest(uid){
+  PORTFOLIO_OWNER_UID = String(uid);
+  PORTFOLIO = [];
+  try{
+    var snap = await db.collection('users').doc(String(uid)).collection('portfolio').orderBy('creeLe','desc').get();
+    PORTFOLIO = snap.docs.map(function(doc){
+      var d = doc.data()||{};
+      return { id:doc.id, uid:uid, titre:d.titre||'', description:d.description||'', photoBase64:d.photoBase64||'' };
     });
+  }catch(e){ console.error('Portfolio load error',e); }
+}
+function openPortfolioModal(portfolioId){
+  var item = portfolioId ? PORTFOLIO.find(function(it){ return it.id===portfolioId; }) : null;
+  var old = document.getElementById('portfolio-modal'); if(old) old.remove();
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'portfolio-modal';
+  modal.style.cssText = 'align-items:flex-start;padding:0;overflow-y:auto';
+  var currentPhoto = item ? item.photoBase64 : '';
+  modal.innerHTML = '<div style="background:var(--bg);width:100%;min-height:100%;padding:24px 20px 40px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">'
+    + '<button id="pf-back" style="background:var(--card);border:none;border-radius:12px;color:var(--text);font-size:18px;width:40px;height:40px;cursor:pointer">←</button>'
+    + '<h2 style="font-size:18px;font-weight:800;color:var(--text)">'+(item?'Modifier la réalisation':'Ajouter une réalisation')+'</h2></div>'
+    + '<div class="input-wrap"><label>Photo</label><div style="border:2px dashed var(--border2);border-radius:14px;padding:14px;text-align:center;background:var(--card)"><input id="pf-photo" type="file" accept="image/*" style="display:none"/><div id="pf-photo-preview">'+(currentPhoto?'<img src="'+currentPhoto+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px"/>':'<div style="padding:20px;color:var(--muted);font-size:12px">Aucune photo sélectionnée</div>')+'</div><button id="pf-photo-btn" type="button" class="btn btn-outline" style="margin-top:10px">Choisir une photo</button></div></div>'
+    + '<div class="input-wrap"><label>Titre</label><div class="input-field"><input id="pf-titre" type="text" value="'+(item?item.titre:'')+'" placeholder="Ex: Installation tableau électrique"/></div></div>'
+    + '<div class="input-wrap"><label>Description</label><div class="input-field"><textarea id="pf-desc" rows="3" style="width:100%;background:transparent;border:none;color:var(--text);outline:none;font-family:\'Plus Jakarta Sans\',sans-serif">'+(item?item.description:'')+'</textarea></div></div>'
+    + '<button id="pf-save" class="btn btn-primary" style="margin-top:16px">Enregistrer</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+  document.getElementById('pf-back').onclick = function(){ modal.remove(); };
+  document.getElementById('pf-photo-btn').onclick = function(){ document.getElementById('pf-photo').click(); };
+  document.getElementById('pf-photo').onchange = async function(e){
+    var file = (e.target.files||[])[0];
+    if(!file) return;
+    if(!file.type.startsWith('image/')){ showToast('Choisis une image','var(--err)'); return; }
+    try{
+      currentPhoto = await compressImageFile(file,{maxWidth:1280,maxHeight:1280,targetBytes:300000});
+      document.getElementById('pf-photo-preview').innerHTML = '<img src="'+currentPhoto+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px"/>';
+    }catch(err){ showToast('Image impossible à traiter','var(--err)'); }
+  };
+  document.getElementById('pf-save').onclick = function(){
+    var titre = document.getElementById('pf-titre').value.trim();
+    var description = document.getElementById('pf-desc').value.trim();
+    if(!titre){ showToast('Le titre est obligatoire','var(--err)'); return; }
+    if(!currentPhoto){ showToast('Ajoute une photo','var(--err)'); return; }
+    var uid = (STATE.user||{}).uid; if(!uid) return;
+    var payload = { titre:titre, description:description, photoBase64:currentPhoto, creeLe:firebase.firestore.FieldValue.serverTimestamp() };
+    var ref = item ? db.collection('users').doc(uid).collection('portfolio').doc(item.id) : db.collection('users').doc(uid).collection('portfolio').doc();
+    ref.set(payload,{merge:true}).then(function(){
+      showToast(item?'Réalisation modifiée':'Réalisation ajoutée');
+      modal.remove();
+      loadPortfolioForPrest(uid).then(function(){ renderProfile(); });
+    }).catch(function(e){
+      if((e.message||'').includes('longer than')) showToast('Photo trop lourde','var(--err)');
+      else showToast('Erreur: '+e.message,'var(--err)');
+    });
+  };
+}
+function deletePortfolioItem(portfolioId){
+  if(!confirm('Supprimer cette réalisation ?')) return;
+  var uid = (STATE.user||{}).uid;
+  db.collection('users').doc(uid).collection('portfolio').doc(portfolioId).delete()
+    .then(function(){
+      showToast('Réalisation supprimée');
+      PORTFOLIO = PORTFOLIO.filter(function(it){ return it.id!==portfolioId; });
+      renderProfile();
+    }).catch(function(e){ showToast('Erreur: '+e.message,'var(--err)'); });
+}
+
+// ══════════════════════════════════════════════
+//  DEVIS
+// ══════════════════════════════════════════════
+function openDevisModal(convId){
+  var old = document.getElementById('devis-modal'); if(old) old.remove();
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'devis-modal';
+  modal.style.cssText = 'align-items:flex-end;justify-content:center';
+  modal.innerHTML = '<div class="modal-sheet" style="padding:0 0 28px">'
+    + '<div class="modal-handle"></div>'
+    + '<div style="padding:18px 16px 4px">'
+    + '<div style="font-size:20px;font-weight:800;margin-bottom:14px">📋 Envoyer un devis</div>'
+    + '<div class="input-wrap"><label>Service</label><div class="input-field"><input id="dv-service" type="text" placeholder="Ex: Installation tableau électrique"/></div></div>'
+    + '<div class="input-wrap"><label>Description</label><div class="input-field"><textarea id="dv-desc" rows="2" style="width:100%;background:transparent;border:none;color:var(--text);outline:none;font-family:\'Plus Jakarta Sans\',sans-serif" placeholder="Détails de la prestation..."></textarea></div></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    + '<div class="input-wrap"><label>Prix (FCFA)</label><div class="input-field"><input id="dv-prix" type="number" placeholder="25000"/></div></div>'
+    + '<div class="input-wrap"><label>Délai</label><div class="input-field"><input id="dv-delai" type="text" placeholder="Ex: 2 jours"/></div></div>'
+    + '</div>'
+    + '<div class="input-wrap"><label>Valable jusqu\'au</label><div class="input-field"><input id="dv-valid" type="date"/></div></div>'
+    + '<button id="dv-send" class="btn btn-primary" style="margin-top:4px">Envoyer le devis</button>'
+    + '</div></div>';
+  document.body.appendChild(modal);
+  modal.onclick = function(e){ if(e.target===modal) modal.remove(); };
+  document.getElementById('dv-send').onclick = function(){
+    var service = document.getElementById('dv-service').value.trim();
+    var description = document.getElementById('dv-desc').value.trim();
+    var prix = Number(document.getElementById('dv-prix').value||0);
+    var delai = document.getElementById('dv-delai').value.trim();
+    var validJusqu = document.getElementById('dv-valid').value;
+    if(!service){ showToast('Renseigne le service','var(--err)'); return; }
+    if(!prix){ showToast('Renseigne le prix','var(--err)'); return; }
+    sendDevis(convId,{service,description,prix,delai,validJusqu});
+    modal.remove();
+  };
+}
+function sendDevis(convId, data){
+  var u = STATE.user||{};
+  var devisId = 'DV-'+Date.now();
+  var nowTxt = now();
+  var conv = CONVS.find(function(c){ return c.id==convId; })||{};
+  var otherUid = conv.prestId===u.uid ? (conv.clientUid||'') : (conv.prestId||'');
+  // Save to devis subcollection
+  db.collection('conversations').doc(convId).collection('devis').doc(devisId).set({
+    id:devisId, service:data.service, description:data.description||'', prix:data.prix,
+    delai:data.delai||'', validJusqu:data.validJusqu||'',
+    prestataireUid:u.uid, prestataireNom:u.nom||'Prestataire',
+    statut:'en_attente', creeLe:firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(){});
+  // Send as special message
+  var devisData = {service:data.service,description:data.description||'',prix:data.prix,delai:data.delai||'',validJusqu:data.validJusqu||'',statut:'en_attente'};
+  db.collection('conversations').doc(convId).set({
+    lastText:'📋 Devis: '+data.service+' — '+fmt(data.prix),
+    lastTime:nowTxt, lastSenderUid:u.uid||'',
+    unreadBy: otherUid ? {[otherUid]:1} : {}
+  },{merge:true}).then(function(){
+    return db.collection('conversations').doc(convId).collection('messages').add({
+      text:'📋 Devis: '+data.service, type:'devis', devisId:devisId, devisData:devisData,
+      from:u.uid, senderNom:u.nom||'Prestataire', time:nowTxt,
+      creeLe:firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }).then(function(){
+    if(otherUid) sendNotification(otherUid,'📋 Devis reçu',data.service+' — '+fmt(data.prix));
+    showToast('Devis envoyé');
+  }).catch(function(e){ showToast('Erreur: '+e.message,'var(--err)'); });
+}
+function accepterDevis(devisId, convId, devisDataStr){
+  if(!confirm('Accepter ce devis et créer une commande ?')) return;
+  var devisData = {};
+  try{ devisData = typeof devisDataStr==='string' ? JSON.parse(devisDataStr.replace(/&quot;/g,'"')) : devisDataStr; }catch(e){}
+  db.collection('conversations').doc(convId).collection('devis').doc(devisId).update({statut:'accepte'}).catch(function(){});
+  db.collection('conversations').doc(convId).collection('messages').where('devisId','==',devisId).get().then(function(snap){
+    snap.docs.forEach(function(doc){ doc.ref.update({'devisData.statut':'accepte'}); });
+  }).catch(function(){});
+  var conv = CONVS.find(function(c){ return c.id==convId; })||{};
+  var u = STATE.user||{};
+  var cmdId = 'CMD-'+Date.now();
+  var today = new Date().toISOString().slice(0,10);
+  db.collection('commandes').doc(cmdId).set({
+    id:cmdId, prestId:conv.prestId||'', prestataireUid:conv.prestId||'',
+    clientUid:u.uid||'', clientNom:u.nom||'Client', clientEmail:u.email||'',
+    statut:'en_attente', service:devisData.service||'', adresse:'', date:today,
+    heure:'08:00', duree:1, total:Number(devisData.prix||0), cree:today, devisId:devisId
+  },{merge:true}).then(function(){
+    showToast('Devis accepté — commande créée !');
+    if(conv.prestId) sendNotification(conv.prestId,'✅ Devis accepté',(devisData.service||'Devis')+' accepté par '+(u.nom||'Client'));
+    goTab('cmds');
+  }).catch(function(e){ showToast('Erreur: '+e.message,'var(--err)'); });
+}
+function refuserDevis(devisId, convId){
+  if(!confirm('Refuser ce devis ?')) return;
+  db.collection('conversations').doc(convId).collection('devis').doc(devisId).update({statut:'refuse'}).catch(function(){});
+  db.collection('conversations').doc(convId).collection('messages').where('devisId','==',devisId).get().then(function(snap){
+    snap.docs.forEach(function(doc){ doc.ref.update({'devisData.statut':'refuse'}); });
+  }).catch(function(){});
+  showToast('Devis refusé');
+  var conv = CONVS.find(function(c){ return c.id==convId; })||{};
+  if(conv.prestId) sendNotification(conv.prestId,'❌ Devis refusé','Le client a refusé votre devis');
+}
+
+// ══════════════════════════════════════════════
+//  CONFIRMATION FIN DE PRESTATION (client)
+// ══════════════════════════════════════════════
+function clientConfirmFin(cmdId){
+  if(!confirm('Confirmer que la prestation est bien terminée ?')) return;
+  db.collection('commandes').doc(cmdId).update({clientConfirme:true}).then(function(){
+    showToast('Prestation confirmée !');
+    var cmd = CMDS.find(function(c){ return c.id===cmdId; });
+    if(cmd && cmd.prestId) sendNotification(cmd.prestId,'👍 Prestation confirmée','Le client a confirmé la fin de "' + (cmd.service||'') + '"');
+    // Propose leaving a review
+    setTimeout(function(){
+      var cmd2 = CMDS.find(function(c){ return c.id===cmdId; });
+      if(cmd2){
+        var p = prest(cmd2.prestId);
+        if(p && canCurrentUserReview(p.id)){
+          STATE.selPrest = p;
+          STATE.tab = 'home';
+          renderApp();
+          setTimeout(function(){ openAvisTab(); }, 300);
+        }
+      }
+    }, 800);
+  }).catch(function(e){ showToast('Erreur: '+e.message,'var(--err)'); });
+}
+
+// ══════════════════════════════════════════════
+//  STATISTIQUES PRESTATAIRE
+// ══════════════════════════════════════════════
+async function renderStatsContent(){
+  const u = STATE.user||{};
+  const uid = u.uid;
+  // Fetch views from Firestore
+  var views = Number(u.views||0);
+  try{
+    var udoc = await db.collection('users').doc(uid).get();
+    views = Number((udoc.data()||{}).views||0);
+  }catch(e){}
+  // Stats from local data
+  const myReviews = REVIEWS.filter(function(r){ return String(r.prestId)===String(uid); });
+  const avgNote = myReviews.length ? (myReviews.reduce(function(a,r){ return a+(Number(r.note)||0); },0)/myReviews.length).toFixed(1) : '—';
+  const convWithReply = CONVS.filter(function(cv){
+    return cv.msgs && cv.msgs.some(function(m){ return m.from==='me'; });
+  }).length;
+  const responseRate = CONVS.length ? Math.round((convWithReply/CONVS.length)*100) : 0;
+  const rateColor = responseRate>=70 ? 'var(--ok)' : responseRate>=40 ? 'var(--gold)' : 'var(--err)';
+  // 7-day bar chart from CMDS
+  const nowDate = new Date();
+  const days = [];
+  for(var i=6;i>=0;i--){
+    var d = new Date(nowDate); d.setDate(d.getDate()-i);
+    var dayStr = d.toISOString().slice(0,10);
+    var label = d.toLocaleDateString('fr-FR',{weekday:'short'});
+    var count = CMDS.filter(function(c){ return c.cree===dayStr; }).length;
+    days.push({label:label,count:count});
+  }
+  var maxCount = Math.max.apply(null,days.map(function(d){ return d.count; }).concat([1]));
+  var barChart = '<div class="stat-bars">'
+    + days.map(function(d){
+        var h = Math.max(6, Math.round((d.count/maxCount)*70));
+        return '<div class="stat-bar-col">'
+          + '<div style="font-size:9px;color:var(--muted);height:14px;line-height:14px">'+(d.count||'')+'</div>'
+          + '<div class="stat-bar" style="height:'+h+'px;background:'+(d.count>0?'linear-gradient(to top,#1A8A4A,#2952CC)':'var(--border)')+'"></div>'
+          + '<div style="font-size:9px;color:var(--muted);margin-top:4px">'+d.label+'</div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
+    + '<div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">👁️ Vues profil</div><div style="font-size:28px;font-weight:800">'+views.toLocaleString('fr')+'</div></div>'
+    + '<div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">💬 Conversations</div><div style="font-size:28px;font-weight:800">'+CONVS.length+'</div></div>'
+    + '<div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">📦 Commandes</div><div style="font-size:28px;font-weight:800">'+CMDS.length+'</div></div>'
+    + '<div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">⭐ Note moyenne</div><div style="font-size:28px;font-weight:800">'+avgNote+'</div><div style="font-size:10px;color:var(--muted)">'+myReviews.length+' avis</div></div>'
+    + '</div>'
+    + '<div class="card" style="margin-bottom:14px">'
+    + '<div class="stitle">Taux de réponse</div>'
+    + '<div style="font-size:30px;font-weight:800;color:'+rateColor+'">'+responseRate+'%</div>'
+    + '<div style="background:var(--border);border-radius:4px;height:7px;margin-top:8px"><div style="height:100%;width:'+responseRate+'%;border-radius:4px;background:'+rateColor+';transition:width .5s ease"></div></div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:6px">'+convWithReply+' réponses / '+CONVS.length+' conversations</div>'
+    + '</div>'
+    + '<div class="card"><div class="stitle">Commandes — 7 derniers jours</div>'+barChart+'</div>'
+    + (NOTIFICATIONS.length ? '<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center"><div class="stitle" style="margin-bottom:0">🔔 Notifications non lues ('+NOTIFICATIONS.length+')</div><button onclick="markAllNotifsRead()" style="font-size:11px;font-weight:700;color:var(--accent);background:none;border:none;cursor:pointer">Tout marquer lu</button></div><div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'+NOTIFICATIONS.slice(0,5).map(function(n){ return '<div style="padding:10px;background:var(--sand);border-radius:12px;border-left:3px solid var(--accent)"><div style="font-weight:700;font-size:13px">'+n.title+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">'+n.body+'</div></div>'; }).join('')+'</div></div>' : '');
 }
 
 async function logout(){
