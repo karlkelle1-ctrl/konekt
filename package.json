@@ -1,0 +1,27 @@
+{
+  "name": "konekt",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/karlkelle1-ctrl/konekt.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/karlkelle1-ctrl/konekt/issues"
+  },
+  "homepage": "https://github.com/karlkelle1-ctrl/konekt#readme",
+  "dependencies": {
+    "@capacitor/android": "8.3.4",
+    "@capacitor/core": "8.3.4",
+    "@capacitor/ios": "8.3.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.3.4"
+  }
+}
