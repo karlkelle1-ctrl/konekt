@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">konekt</string>
+    <string name="title_activity_main">konekt</string>
+    <string name="package_name">com.konekt.app</string>
+    <string name="custom_url_scheme">com.konekt.app</string>
+</resources>
